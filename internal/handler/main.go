@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"cess-httpservice/configs"
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -17,5 +19,5 @@ func Main() {
 	r.POST("/file/upload", UpfileHandler)
 	r.POST("/file/download", DownfileHandler)
 
-	r.Run(":8081")
+	r.Run(":" + configs.Port)
 }

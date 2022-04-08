@@ -1,5 +1,7 @@
 package main
 
+import "cess-httpservice/internal/logger"
+
 func main() {
-	//TODO
+	logger.Init()
 }

@@ -19,6 +19,7 @@ type RespranomMsg struct {
 type RegistrationReq struct {
 	Walletaddr  string `json:"walletaddr"`
 	Blocknumber int64  `json:"blocknumber"`
+	Random2     int    `json:"random2"`
 }
 
 // Request structure when user get randomkey

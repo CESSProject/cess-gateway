@@ -22,4 +22,7 @@ const (
 
 	// http service port
 	ServicePort = "8081"
+
+	// random number valid time
+	RandomValidTime = 10.0
 )

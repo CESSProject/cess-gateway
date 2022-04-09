@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"cess-httpservice/configs"
+	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/token"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -34,10 +37,57 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-	fmt.Println(reqmsg)
-	//TODO: Query the block information to determine whether the wallet address is consistent
 
-	//TODO: Generate user token and store to database
+	//TODO: Query block information
+
+	db, err := db.GetDB()
+	if err != nil {
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	bytes, err := db.Get([]byte(reqmsg.Walletaddr))
+	if err != nil {
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	value := strings.Split(string(bytes), "#")
+	if len(value) != 3 {
+		db.Delete([]byte(reqmsg.Walletaddr))
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = "Please get the random number again (valid within 10 minutes)"
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	randomExpire, err := strconv.Atoi(value[2])
+	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
+		db.Delete([]byte(reqmsg.Walletaddr))
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = "Please get the random number again (valid within 10 minutes)"
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
+	random2Local, err := strconv.Atoi(value[1])
+	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
+		db.Delete([]byte(reqmsg.Walletaddr))
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = "Please get the random number again (valid within 10 minutes)"
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	//TODO: Judgment random number1
+	if reqmsg.Random2 != random2Local {
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = "Authentication failed"
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
+	//Generate user token
 	expire := time.Now().Add(time.Hour * 24 * 7).Unix()
 	tk, err := token.GetToken(reqmsg.Walletaddr, reqmsg.Blocknumber, expire)
 	if err != nil {
@@ -46,6 +96,9 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+	//store token to database
+	db.Put([]byte(reqmsg.Walletaddr), []byte(tk))
+
 	resp.Code = 200
 	resp.Msg = "success"
 	resp.Data = tk

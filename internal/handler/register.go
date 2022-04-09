@@ -31,6 +31,7 @@ func RegisterHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
+	//TODO: Generate user token and store to database
 
 	resp.Code = 200
 	resp.Msg = "success"

@@ -137,3 +137,54 @@ func VerifySign(msg []byte, sign []byte, pubkey *rsa.PublicKey) bool {
 	err := rsa.VerifyPKCS1v15(pubkey, crypto.SHA256, bytes, sign)
 	return err == nil
 }
+
+// public key encryption
+// plainText: data to be encrypted
+func RSA_Encrypt(content []byte) ([]byte, error) {
+	pub, err := os.Open(configs.PublicKeyfile)
+	if err != nil {
+		return nil, err
+	}
+	defer pub.Close()
+	info, _ := pub.Stat()
+	buf := make([]byte, info.Size())
+	pub.Read(buf)
+	//pem decoding
+	block, _ := pem.Decode(buf)
+	publicKeyInterface, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	publicKey := publicKeyInterface.(*rsa.PublicKey)
+	//encryption
+	cipherText, err := rsa.EncryptPKCS1v15(rand.Reader, publicKey, content)
+	if err != nil {
+		return nil, err
+	}
+	return cipherText, nil
+}
+
+// private key decryption
+// cipherText: encrypted data
+func RSA_Decrypt(cipherText []byte) ([]byte, error) {
+	prv, err := os.Open(configs.PrivateKeyfile)
+	if err != nil {
+		return nil, err
+	}
+	defer prv.Close()
+	info, _ := prv.Stat()
+	buf := make([]byte, info.Size())
+	prv.Read(buf)
+	//pem decoding
+	block, _ := pem.Decode(buf)
+	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, err
+	}
+	//decryption
+	content, err := rsa.DecryptPKCS1v15(rand.Reader, privateKey, cipherText)
+	if err != nil {
+		return nil, err
+	}
+	return content, nil
+}

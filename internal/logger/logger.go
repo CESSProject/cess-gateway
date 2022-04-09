@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	Warn *zap.Logger
 	Err  *zap.Logger
 	Out  *zap.Logger
 	path string

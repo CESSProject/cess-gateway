@@ -27,7 +27,7 @@ type LevelDB struct {
 
 var C Cache
 
-func GetCache() (Cache, error) {
+func GetDB() (Cache, error) {
 	var err error
 	if C == nil {
 		_, err = os.Stat(configs.DbDir)

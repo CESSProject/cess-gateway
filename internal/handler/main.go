@@ -18,6 +18,6 @@ func Main() {
 	//
 	r.POST("/file/upload", UpfileHandler)
 	r.POST("/file/download", DownfileHandler)
-
+	r.POST("/register", RegisterHandler)
 	r.Run(":" + configs.Port)
 }

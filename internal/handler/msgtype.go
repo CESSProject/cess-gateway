@@ -4,7 +4,7 @@ package handler
 type RespMsg struct {
 	Code int         `json:"code"`
 	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 // http response random number message

@@ -34,7 +34,7 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-
+	fmt.Println("token:", usertoken_en)
 	content_length := c.Request.ContentLength
 	if content_length <= 0 {
 		resp.Msg = "empty file"
@@ -50,7 +50,19 @@ func UpfileHandler(c *gin.Context) {
 	}
 
 	file_c, _, _ := c.Request.FormFile("file")
-	fpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.Userid), file_p.Filename)
+	userpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.Userid))
+	_, err = os.Stat(userpath)
+	if err != nil {
+		err = os.MkdirAll(userpath, os.ModeDir)
+		if err != nil {
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = err.Error()
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+	}
+
+	fpath := filepath.Join(userpath, file_p.Filename)
 	_, err = os.Stat(fpath)
 	if err == nil {
 		resp.Msg = "duplicate filename"

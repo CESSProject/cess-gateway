@@ -45,6 +45,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 	}
 	resp.Code = http.StatusInternalServerError
 	randomkey1, randomkey2 := 0, 0
+	value := ""
 	v, err, _ := sf.Do(reqmsg.Walletaddr, func() (interface{}, error) {
 		db, err := db.GetDB()
 		if err != nil {
@@ -57,8 +58,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 			return nil, err
 		}
 		if len(bytes) == 0 {
-			randomkey1, randomkey2 = generateRandoms()
-			value := fmt.Sprintf("%v", randomkey1) + "#" + fmt.Sprintf("%v", randomkey2) + "#" + fmt.Sprintf("%v", time.Now().Unix())
+			randomkey1, randomkey2, value = generateRandoms()
 			err = db.Put([]byte(reqmsg.Walletaddr+"_random"), []byte(value))
 			if err != nil {
 				Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
@@ -69,8 +69,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 			return value, err
 		} else {
 			if len(strings.Split(string(bytes), "#")) != 3 {
-				randomkey1, randomkey2 = generateRandoms()
-				value := fmt.Sprintf("%v", randomkey1) + "#" + fmt.Sprintf("%v", randomkey2) + "#" + fmt.Sprintf("%v", time.Now().Unix())
+				randomkey1, randomkey2, value = generateRandoms()
 				err = db.Put([]byte(reqmsg.Walletaddr+"_random"), []byte(value))
 				if err != nil {
 					Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
@@ -92,7 +91,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 	values := strings.Split(v.(string), "#")
 	expire, _ := strconv.ParseInt(values[2], 10, 64)
 	if time.Since(time.Unix(expire, 0)).Minutes() > configs.RandomValidTime {
-		randomkey1, randomkey2 = generateRandoms()
+		randomkey1, randomkey2, value = generateRandoms()
 		db, err := db.GetDB()
 		if err != nil {
 			Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
@@ -124,12 +123,13 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 }
 
 //
-func generateRandoms() (int, int) {
+func generateRandoms() (int, int, string) {
 	for {
 		randomkey1 := tools.RandomInRange(100000, 999999)
 		randomkey2 := tools.RandomInRange(100000, 999999)
 		if randomkey2 != randomkey1 {
-			return randomkey1, randomkey2
+			value := fmt.Sprintf("%v", randomkey1) + "#" + fmt.Sprintf("%v", randomkey2) + "#" + fmt.Sprintf("%v", time.Now().Unix())
+			return randomkey1, randomkey2, value
 		}
 	}
 }

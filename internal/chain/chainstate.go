@@ -52,11 +52,11 @@ func GetUserRegisterMsg(blocknumber uint64) (Chain_RegisterMsg, error) {
 		Out.Sugar().Infof("[%v]Decode event err:%v", blocknumber, err)
 	}
 	// TODO:Waiting for the chain to define the interface
-	if events.FileMap_RegistrationUser != nil {
-		for i := 0; i < len(events.FileMap_RegistrationUser); i++ {
+	// if events.FileMap_RegistrationUser != nil {
+	// 	for i := 0; i < len(events.FileMap_RegistrationUser); i++ {
 
-		}
-		return msg, errors.Errorf("[%v]events.FileMap_RegistrationUser data err", blocknumber)
-	}
+	// 	}
+	// 	return msg, errors.Errorf("[%v]events.FileMap_RegistrationUser data err", blocknumber)
+	// }
 	return msg, errors.Errorf("[%v]events.FileMap_RegistrationUser not found", blocknumber)
 }

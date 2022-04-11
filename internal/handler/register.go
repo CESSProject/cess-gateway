@@ -29,7 +29,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-	var reqmsg RegistrationReq
+	var reqmsg ReqRegistrationMsg
 	err = json.Unmarshal(body, &reqmsg)
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)

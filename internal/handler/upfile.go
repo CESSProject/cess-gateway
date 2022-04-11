@@ -87,5 +87,8 @@ func UpfileHandler(c *gin.Context) {
 	resp.Code = http.StatusOK
 	resp.Msg = "success"
 	c.JSON(http.StatusOK, resp)
+
+	//TODO: Upload files to cess storage system
+
 	return
 }

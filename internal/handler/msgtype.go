@@ -8,7 +8,7 @@ type RespMsg struct {
 }
 
 // http response random number message
-type RespranomMsg struct {
+type RespRandomMsg struct {
 	Code    int    `json:"code"`
 	Msg     string `json:"msg"`
 	Random1 int    `json:"random1"`
@@ -16,13 +16,13 @@ type RespranomMsg struct {
 }
 
 // Request structure when user registers
-type RegistrationReq struct {
+type ReqRegistrationMsg struct {
 	Walletaddr  string `json:"walletaddr"`
 	Blocknumber int64  `json:"blocknumber"`
 	Random2     int    `json:"random2"`
 }
 
 // Request structure when user get randomkey
-type GetRandomkeyReq struct {
+type ReqRandomkeyMsg struct {
 	Walletaddr string `json:"walletaddr"`
 }

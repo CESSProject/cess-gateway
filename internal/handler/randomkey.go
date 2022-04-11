@@ -55,7 +55,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 		return
 	}
 	value := fmt.Sprintf("%v", randomkey1) + "#" + fmt.Sprintf("%v", randomkey2) + "#" + fmt.Sprintf("%v", time.Now().Unix())
-	err = db.Put([]byte(reqmsg.Walletaddr), []byte(value))
+	err = db.Put([]byte(reqmsg.Walletaddr+"_random"), []byte(value))
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
 		resp.Msg = err.Error()

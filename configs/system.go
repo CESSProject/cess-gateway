@@ -20,6 +20,9 @@ const (
 	// database dir
 	DbDir = BaseDir + "/db"
 
+	// file cache dir
+	FileCacheDir = BaseDir + "/cache"
+
 	// http service port
 	ServicePort = "8081"
 

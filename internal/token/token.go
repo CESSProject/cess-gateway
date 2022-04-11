@@ -2,23 +2,37 @@ package token
 
 import (
 	"cess-httpservice/internal/encryption"
+	"cess-httpservice/tools"
 	"encoding/base64"
 	"encoding/json"
+	"time"
 )
 
 type TokenMsgType struct {
-	Walletaddr  string `json:"walletaddr"`
+	Userid      int64  `json:"userid"`
 	Blocknumber int64  `json:"blocknumber"`
 	Expire      int64  `json:"expire"`
+	Walletaddr  string `json:"walletaddr"`
+	Randomcode  string `json:"randomcode"`
 }
 
 // Generate user token
 func GetToken(walletaddr string, blocknumber, expire int64) (string, error) {
 	token := TokenMsgType{
-		Walletaddr:  walletaddr,
+		Userid:      0,
 		Blocknumber: blocknumber,
 		Expire:      expire,
+		Walletaddr:  walletaddr,
+		Randomcode:  "",
 	}
+	uid, err := tools.GetGuid(time.Now().UnixNano())
+	if err != nil {
+		return "", err
+	}
+
+	token.Userid = uid
+	token.Randomcode = tools.GetRandomcode(16)
+
 	bytes, err := json.Marshal(token)
 	if err != nil {
 		return "", err

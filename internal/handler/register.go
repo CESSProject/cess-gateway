@@ -18,7 +18,7 @@ import (
 // Handler at user registration
 func GenerateAccessTokenHandler(c *gin.Context) {
 	var resp = RespMsg{
-		Code: 1,
+		Code: http.StatusBadRequest,
 		Msg:  "",
 		Data: nil,
 	}
@@ -29,7 +29,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-	var reqmsg RegistrationReq
+	var reqmsg ReqRegistrationMsg
 	err = json.Unmarshal(body, &reqmsg)
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
@@ -40,6 +40,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 
 	//TODO: Query block information
 
+	resp.Code = http.StatusInternalServerError
 	db, err := db.GetDB()
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
@@ -47,7 +48,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	bytes, err := db.Get([]byte(reqmsg.Walletaddr))
+	bytes, err := db.Get([]byte(reqmsg.Walletaddr + "_random"))
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
 		resp.Msg = err.Error()
@@ -56,34 +57,36 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	}
 	value := strings.Split(string(bytes), "#")
 	if len(value) != 3 {
-		db.Delete([]byte(reqmsg.Walletaddr))
+		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "Please get the random number again (valid within 10 minutes)"
+		resp.Msg = "Please get the random number again (valid within 5 minutes)"
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	randomExpire, err := strconv.Atoi(value[2])
 	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
-		db.Delete([]byte(reqmsg.Walletaddr))
+		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "Please get the random number again (valid within 10 minutes)"
-		c.JSON(http.StatusBadRequest, resp)
+		resp.Code = http.StatusForbidden
+		resp.Msg = "Please get the random number again (valid within 5 minutes)"
+		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
 	random2Local, err := strconv.Atoi(value[1])
 	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
-		db.Delete([]byte(reqmsg.Walletaddr))
+		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "Please get the random number again (valid within 10 minutes)"
+		resp.Msg = "Please get the random number again (valid within 5 minutes)"
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	//TODO: Judgment random number1
 	if reqmsg.Random2 != random2Local {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Code = http.StatusForbidden
 		resp.Msg = "Authentication failed"
-		c.JSON(http.StatusBadRequest, resp)
+		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
@@ -97,8 +100,13 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		return
 	}
 	//store token to database
-	db.Put([]byte(reqmsg.Walletaddr), []byte(tk))
-
+	err = db.Put([]byte(reqmsg.Walletaddr+"_token"), []byte(tk))
+	if err != nil {
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
 	resp.Code = 200
 	resp.Msg = "success"
 	resp.Data = tk

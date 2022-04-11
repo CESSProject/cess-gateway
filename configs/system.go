@@ -20,9 +20,12 @@ const (
 	// database dir
 	DbDir = BaseDir + "/db"
 
+	// file cache dir
+	FileCacheDir = BaseDir + "/cache"
+
 	// http service port
 	ServicePort = "8081"
 
-	// random number valid time
-	RandomValidTime = 10.0
+	// random number valid time, the unit is minutes
+	RandomValidTime = 5.0
 )

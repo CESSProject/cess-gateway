@@ -14,6 +14,11 @@ type Chain_RegisterMsg struct {
 	Random   types.U32   `json:"random"`
 }
 
+type SchedulerInfo struct {
+	Ip    types.Bytes     `json:"ip"`
+	Owner types.AccountID `json:"acc"`
+}
+
 // Get miner information on the cess chain
 func GetUserRegisterMsg(blocknumber uint64, walletadddr string) (Chain_RegisterMsg, error) {
 	var (
@@ -72,4 +77,35 @@ func GetUserRegisterMsg(blocknumber uint64, walletadddr string) (Chain_RegisterM
 		return msg, errors.Errorf("[%v]events.FileBank_UserAuth data err", blocknumber)
 	}
 	return msg, errors.Errorf("[%v]events.FileBank_UserAuth not found", blocknumber)
+}
+
+// Get scheduler information on the cess chain
+func GetSchedulerInfo() ([]SchedulerInfo, error) {
+	var (
+		err  error
+		data []SchedulerInfo
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return nil, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileMap, FileMap_SchedulerInfo)
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileMap, FileMap_SchedulerInfo)
+	if err != nil {
+		return nil, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_SchedulerInfo)
+	}
+
+	_, err = api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return nil, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_SchedulerInfo)
+	}
+	return data, nil
 }

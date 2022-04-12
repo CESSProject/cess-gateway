@@ -47,7 +47,7 @@ func substrateAPIKeepAlive() {
 		if count > 1 {
 			count = 2
 			r, err = gsrpc.NewSubstrateAPI(configs.ChainAddr)
-			if err != nil {
+			if err == nil {
 				Err.Sugar().Errorf("%v", err)
 			} else {
 				count = 0

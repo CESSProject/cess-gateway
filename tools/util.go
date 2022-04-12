@@ -1,7 +1,11 @@
 package tools
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"io"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/bwmarrin/snowflake"
@@ -36,4 +40,19 @@ func GetRandomcode(length uint8) string {
 		bytes[i] = baseStr[r.Intn(l)]
 	}
 	return string(bytes)
+}
+
+// Calculate the file hash value
+func CalcFileHash(fpath string) (string, error) {
+	f, err := os.Open(fpath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

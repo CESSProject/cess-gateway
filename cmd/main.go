@@ -2,10 +2,8 @@ package main
 
 import (
 	"cess-httpservice/configs"
-	"cess-httpservice/internal/chain"
-	"cess-httpservice/internal/encryption"
 	"cess-httpservice/internal/handler"
-	"cess-httpservice/internal/logger"
+
 	"fmt"
 	"os"
 )
@@ -36,14 +34,14 @@ func init() {
 			os.Exit(1)
 		}
 	}
+	if err := configs.ParseConfile(); err != nil {
+		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
+		os.Exit(1)
+	}
 }
 
 // Program entry
 func main() {
-	//init
-	logger.Init()
-	encryption.Init()
-	chain.Init()
 	//start-up
 	handler.Main()
 }

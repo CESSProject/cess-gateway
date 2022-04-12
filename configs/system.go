@@ -1,5 +1,7 @@
 package configs
 
+import "time"
+
 const (
 	// version
 	VERSION = "cess-httpservice_v0.0.0"
@@ -28,4 +30,13 @@ const (
 
 	// random number valid time, the unit is minutes
 	RandomValidTime = 5.0
+
+	// the time to wait for the event, in seconds
+	TimeToWaitEvents = time.Duration(time.Second * 15)
+)
+
+const (
+	RpcService_Scheduler = "wservice"
+	RpcMethod_WriteFile  = "writefile"
+	RpcMethod_ReadFile   = "readfile"
 )

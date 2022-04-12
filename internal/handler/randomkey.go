@@ -53,7 +53,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 			return nil, err
 		}
 		bytes, err := db.Get([]byte(reqmsg.Walletaddr + "_random"))
-		if err != nil && err.Error() != "not fount" {
+		if err != nil && err.Error() != "leveldb: not found" {
 			Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
 			return nil, err
 		}
@@ -79,7 +79,7 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 				}
 				return value, nil
 			} else {
-				return bytes, nil
+				return string(bytes), nil
 			}
 		}
 	})

@@ -9,7 +9,6 @@ import (
 	"golang.org/x/crypto/blake2b"
 )
 
-// https://github.com/paritytech/substrate/blob/master/ss58-registry.json
 var (
 	SSPrefix          = []byte{0x53, 0x53, 0x35, 0x38, 0x50, 0x52, 0x45}
 	PolkadotPrefix    = []byte{0x00}
@@ -88,4 +87,29 @@ func appendBytes(data1, data2 []byte) []byte {
 		return data1
 	}
 	return append(data1, data2...)
+}
+
+func VerityAddress(address string, prefix []byte) error {
+	decodeBytes := base58.Decode(address)
+	if len(decodeBytes) != 35 {
+		return errors.New("base58 decode error")
+	}
+	if decodeBytes[0] != prefix[0] {
+		return errors.New("prefix valid error")
+	}
+	pub := decodeBytes[1 : len(decodeBytes)-2]
+
+	data := append(prefix, pub...)
+	input := append(SSPrefix, data...)
+	ck := blake2b.Sum512(input)
+	checkSum := ck[:2]
+	for i := 0; i < 2; i++ {
+		if checkSum[i] != decodeBytes[33+i] {
+			return errors.New("checksum valid error")
+		}
+	}
+	if len(pub) != 32 {
+		return errors.New("decode public key length is not equal 32")
+	}
+	return nil
 }

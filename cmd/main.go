@@ -42,10 +42,6 @@ func init() {
 
 // Program entry
 func main() {
-	//init
-	//logger.LogInit()
-	// encryption.Init()
-	// chain.Init()
 	//start-up
 	handler.Main()
 }

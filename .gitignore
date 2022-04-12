@@ -25,3 +25,6 @@ main
 *.dll
 *.so
 *.a
+
+## config file
+conf.toml

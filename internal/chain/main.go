@@ -17,7 +17,7 @@ var (
 )
 
 // init
-func Init() {
+func init() {
 	var err error
 	r, err = gsrpc.NewSubstrateAPI(configs.ChainAddr)
 	if err != nil {

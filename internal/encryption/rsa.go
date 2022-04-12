@@ -12,7 +12,7 @@ import (
 	"os"
 )
 
-func Init() {
+func init() {
 	if err := generateRSAKeyfile(2048); err != nil {
 		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
 		os.Exit(1)

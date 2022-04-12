@@ -19,6 +19,6 @@ func Main() {
 	r.POST("/file/upload", UpfileHandler)
 	r.GET("/file/download", DownfileHandler)
 	r.POST("/user/randoms", GenerateRandomkeyHandler)
-	r.POST("/user/activate", GenerateAccessTokenHandler)
+	r.POST("/user/grant", GenerateAccessTokenHandler)
 	r.Run(":" + configs.ServicePort)
 }

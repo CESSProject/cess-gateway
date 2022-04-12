@@ -2,6 +2,7 @@ package handler
 
 import (
 	"cess-httpservice/configs"
+	"cess-httpservice/internal/chain"
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/token"
@@ -20,7 +21,6 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	var resp = RespMsg{
 		Code: http.StatusBadRequest,
 		Msg:  "",
-		Data: nil,
 	}
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
@@ -38,19 +38,25 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		return
 	}
 
-	//TODO: Query block information
+	regmsg, err := chain.GetUserRegisterMsg(reqmsg.Blocknumber, reqmsg.Walletaddr)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
+		resp.Msg = err.Error()
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
 
 	resp.Code = http.StatusInternalServerError
 	db, err := db.GetDB()
 	if err != nil {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	bytes, err := db.Get([]byte(reqmsg.Walletaddr + "_random"))
 	if err != nil {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
 		return
@@ -58,7 +64,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	value := strings.Split(string(bytes), "#")
 	if len(value) != 3 {
 		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = "Please get the random number again (valid within 5 minutes)"
 		c.JSON(http.StatusInternalServerError, resp)
 		return
@@ -66,24 +72,24 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	randomExpire, err := strconv.Atoi(value[2])
 	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
 		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Code = http.StatusForbidden
 		resp.Msg = "Please get the random number again (valid within 5 minutes)"
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}
-
+	random1Local, err := strconv.Atoi(value[0])
 	random2Local, err := strconv.Atoi(value[1])
 	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
 		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = "Please get the random number again (valid within 5 minutes)"
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	//TODO: Judgment random number1
-	if reqmsg.Random2 != random2Local {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+
+	if reqmsg.Random2 != random2Local || random1Local != int(regmsg.Random) {
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Code = http.StatusForbidden
 		resp.Msg = "Authentication failed"
 		c.JSON(http.StatusForbidden, resp)
@@ -94,7 +100,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	expire := time.Now().Add(time.Hour * 24 * 7).Unix()
 	tk, err := token.GetToken(reqmsg.Walletaddr, reqmsg.Blocknumber, expire)
 	if err != nil {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
 		return
@@ -102,7 +108,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	//store token to database
 	err = db.Put([]byte(reqmsg.Walletaddr+"_token"), []byte(tk))
 	if err != nil {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
 		return

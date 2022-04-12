@@ -10,14 +10,14 @@ import (
 
 type TokenMsgType struct {
 	Userid      int64  `json:"userid"`
-	Blocknumber int64  `json:"blocknumber"`
+	Blocknumber uint64 `json:"blocknumber"`
 	Expire      int64  `json:"expire"`
 	Walletaddr  string `json:"walletaddr"`
 	Randomcode  string `json:"randomcode"`
 }
 
 // Generate user token
-func GetToken(walletaddr string, blocknumber, expire int64) (string, error) {
+func GetToken(walletaddr string, blocknumber uint64, expire int64) (string, error) {
 	token := TokenMsgType{
 		Userid:      0,
 		Blocknumber: blocknumber,

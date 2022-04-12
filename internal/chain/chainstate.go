@@ -2,18 +2,20 @@ package chain
 
 import (
 	. "cess-httpservice/internal/logger"
+	"cess-httpservice/tools"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
 )
 
 type Chain_RegisterMsg struct {
-	Acc    types.Bytes `json:"acc"`
-	Random types.U32   `json:"random"`
+	Acc      types.Bytes `json:"acc"`
+	Collrate types.U128  `json:"collrate"`
+	Random   types.U32   `json:"random"`
 }
 
 // Get miner information on the cess chain
-func GetUserRegisterMsg(blocknumber uint64) (Chain_RegisterMsg, error) {
+func GetUserRegisterMsg(blocknumber uint64, walletadddr string) (Chain_RegisterMsg, error) {
 	var (
 		err error
 		msg Chain_RegisterMsg
@@ -47,16 +49,27 @@ func GetUserRegisterMsg(blocknumber uint64) (Chain_RegisterMsg, error) {
 	if err != nil {
 		return msg, errors.Errorf("GetStorageRaw [%v] [%v]", blocknumber, err)
 	}
+
 	err = types.EventRecordsRaw(*h).DecodeEventRecords(meta, &events)
 	if err != nil {
 		Out.Sugar().Infof("[%v]Decode event err:%v", blocknumber, err)
 	}
-	// TODO:Waiting for the chain to define the interface
-	// if events.FileMap_RegistrationUser != nil {
-	// 	for i := 0; i < len(events.FileMap_RegistrationUser); i++ {
 
-	// 	}
-	// 	return msg, errors.Errorf("[%v]events.FileMap_RegistrationUser data err", blocknumber)
-	// }
-	return msg, errors.Errorf("[%v]events.FileMap_RegistrationUser not found", blocknumber)
+	bytes, err := tools.DecodeToPub(walletadddr)
+	if err != nil {
+		return msg, errors.Errorf("DecodeToPub [%v] [%v] %v", blocknumber, walletadddr, err)
+	}
+
+	if events.FileBank_UserAuth != nil {
+		for i := 0; i < len(events.FileBank_UserAuth); i++ {
+			if events.FileBank_UserAuth[i].User == types.NewAccountID(bytes) {
+				msg.Acc = bytes
+				msg.Random = events.FileBank_UserAuth[i].Random
+				msg.Collrate = events.FileBank_UserAuth[i].Collrate
+				return msg, nil
+			}
+		}
+		return msg, errors.Errorf("[%v]events.FileBank_UserAuth data err", blocknumber)
+	}
+	return msg, errors.Errorf("[%v]events.FileBank_UserAuth not found", blocknumber)
 }

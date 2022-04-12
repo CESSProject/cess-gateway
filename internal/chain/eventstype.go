@@ -168,6 +168,14 @@ type Event_LeaseExpired struct {
 	Topics []types.Hash
 }
 
+type Event_UserAuth struct {
+	Phase    types.Phase
+	User     types.AccountID
+	Collrate types.U128
+	Random   types.U32
+	Topics   []types.Hash
+}
+
 //------------------------FileMap--------------------------------
 type Event_RegistrationScheduler struct {
 	Phase  types.Phase
@@ -236,6 +244,7 @@ type MyEventRecords struct {
 	FileBank_Purchased            []Event_Purchased
 	FileBank_InsertFileSlice      []Event_InsertFileSlice
 	FileBank_LeaseExpired         []Event_LeaseExpired
+	FileBank_UserAuth             []Event_UserAuth
 	//FileMap
 	FileMap_RegistrationScheduler []Event_RegistrationScheduler
 	//other system

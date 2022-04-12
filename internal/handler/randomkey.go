@@ -79,7 +79,6 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 				}
 				return value, nil
 			} else {
-				fmt.Println(string(bytes))
 				return string(bytes), nil
 			}
 		}

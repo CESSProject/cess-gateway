@@ -78,16 +78,8 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}
-	random1Local, err := strconv.Atoi(value[0])
-	random2Local, err := strconv.Atoi(value[1])
-	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
-		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = "Please get the random number again (valid within 5 minutes)"
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
-
+	random1Local, _ := strconv.Atoi(value[0])
+	random2Local, _ := strconv.Atoi(value[1])
 	if reqmsg.Random2 != random2Local || random1Local != int(regmsg.Random) {
 		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Code = http.StatusForbidden
@@ -96,17 +88,31 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 		return
 	}
 
-	//Generate user token
-	expire := time.Now().Add(time.Hour * 24 * 7).Unix()
-	tk, err := token.GetToken(reqmsg.Walletaddr, reqmsg.Blocknumber, expire)
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
+	bytes, err = db.Get([]byte(reqmsg.Walletaddr + "_token"))
+	if err.Error() == "leveldb: not found" {
+		//Generate user token
+		expire := time.Now().Add(time.Hour * 24 * 7).Unix()
+		tk, err := token.GetToken(reqmsg.Walletaddr, reqmsg.Blocknumber, expire)
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
+			resp.Msg = err.Error()
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		//store token to database
+		err = db.Put([]byte(reqmsg.Walletaddr+"_token"), []byte(tk))
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
+			resp.Msg = err.Error()
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		resp.Code = 200
+		resp.Msg = "success"
+		resp.Data = tk
+		c.JSON(http.StatusOK, resp)
 		return
 	}
-	//store token to database
-	err = db.Put([]byte(reqmsg.Walletaddr+"_token"), []byte(tk))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
 		resp.Msg = err.Error()
@@ -115,7 +121,7 @@ func GenerateAccessTokenHandler(c *gin.Context) {
 	}
 	resp.Code = 200
 	resp.Msg = "success"
-	resp.Data = tk
+	resp.Data = string(bytes)
 	c.JSON(http.StatusOK, resp)
 	return
 }

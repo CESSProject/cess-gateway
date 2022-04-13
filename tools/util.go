@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
 	"io"
@@ -55,4 +56,14 @@ func CalcFileHash(fpath string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// Calculate MD5
+func CalcMD5(s string) ([]byte, error) {
+	h := md5.New()
+	_, err := h.Write([]byte(s))
+	if err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
 }

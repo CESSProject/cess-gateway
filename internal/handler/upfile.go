@@ -3,6 +3,7 @@ package handler
 import (
 	"cess-httpservice/configs"
 	"cess-httpservice/internal/chain"
+	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/rpc"
 	"cess-httpservice/internal/token"
@@ -117,13 +118,13 @@ func UpfileHandler(c *gin.Context) {
 	resp.Msg = "success"
 	c.JSON(http.StatusOK, resp)
 
-	go uploadToStorage(fpath, usertoken.Walletaddr)
+	go uploadToStorage(fpath, usertoken.Walletaddr, usertoken.Userid)
 
 	return
 }
 
 // Upload files to cess storage system
-func uploadToStorage(fpath, walletaddr string) {
+func uploadToStorage(fpath, walletaddr string, userid int64) {
 	time.Sleep(time.Second)
 
 	file, err := os.Stat(fpath)
@@ -263,5 +264,24 @@ func uploadToStorage(fpath, walletaddr string) {
 			return
 		}
 	}
+	os.Remove(fpath)
 	fmt.Printf("[Success] Storage file:%s successful", fpath)
+	Out.Sugar().Infof("[Success] Storage file:%s successful", fpath)
+	key, err := tools.CalcMD5(fmt.Sprintf("%v", userid) + file.Name())
+	if err != nil {
+		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		return
+	}
+	db, err := db.GetDB()
+	if err != nil {
+		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		return
+	}
+	err = db.Put(key, []byte("true"))
+	if err != nil {
+		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		return
+	}
+	fmt.Printf("[Success] DB record a file:%s successful", fpath)
+	Out.Sugar().Infof("[Success] DB record a file:%s successful", fpath)
 }

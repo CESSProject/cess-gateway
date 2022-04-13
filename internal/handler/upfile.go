@@ -53,12 +53,12 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	// content_length := c.Request.ContentLength
-	// if content_length <= 0 {
-	// 	resp.Msg = "empty file"
-	// 	c.JSON(http.StatusBadRequest, resp)
-	// 	return
-	// }
+	content_length := c.Request.ContentLength
+	if content_length <= 0 {
+		resp.Msg = "empty file"
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
 
 	file_p, err := c.FormFile("file")
 	if err != nil {
@@ -67,7 +67,31 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
+	u, err := chain.GetUserInfo(usertoken.Walletaddr)
+	if err != nil {
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	temp1, _ := new(big.Int).SetString(configs.MinimumDeposit, 10)
+	temp2, _ := new(big.Int).SetString(u.Collaterals.String(), 10)
+	if temp2.CmpAbs(temp1) < 0 {
+		resp.Code = http.StatusForbidden
+		resp.Msg = "Deposit less than 10 CESS"
+		c.JSON(http.StatusForbidden, resp)
+		return
+	}
+
+	if u.Space_details.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
+		resp.Code = http.StatusForbidden
+		resp.Msg = "Not enough free space"
+		c.JSON(http.StatusForbidden, resp)
+		return
+	}
+
 	file_c, _, _ := c.Request.FormFile("file")
+	//userpath := filepath.Join(configs.FileCacheDir, "test")
 	userpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.Userid))
 	_, err = os.Stat(userpath)
 	if err != nil {

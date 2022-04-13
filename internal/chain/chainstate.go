@@ -92,9 +92,12 @@ func GetSchedulerInfo() ([]SchedulerInfo, error) {
 		return nil, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_SchedulerInfo)
 	}
 
-	_, err = api.RPC.State.GetStorageLatest(key, &data)
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
 		return nil, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_SchedulerInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileMap, FileMap_SchedulerInfo)
 	}
 	return data, nil
 }
@@ -130,9 +133,12 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_FileMetaInfo)
 	}
 
-	_, err = api.RPC.State.GetStorageLatest(key, &data)
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_FileMetaInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileMap, FileMap_FileMetaInfo)
 	}
 	return data, nil
 }
@@ -155,7 +161,7 @@ func GetUserInfo(wallet string) (UserInfo, error) {
 
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileMap, FileMap_UserInfoMap)
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserInfoMap)
 	}
 
 	bytes, err := tools.DecodeToPub(wallet)
@@ -163,14 +169,17 @@ func GetUserInfo(wallet string) (UserInfo, error) {
 		return data, err
 	}
 
-	key, err := types.CreateStorageKey(meta, State_FileMap, FileMap_UserInfoMap, bytes)
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserInfoMap, bytes)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_UserInfoMap)
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserInfoMap)
 	}
 
-	_, err = api.RPC.State.GetStorageLatest(key, &data)
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_UserInfoMap)
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserInfoMap)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserInfoMap)
 	}
 	return data, nil
 }

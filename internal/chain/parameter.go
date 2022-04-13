@@ -23,7 +23,7 @@ const (
 	SegmentBook_UnVerifiedD   = "UnVerifiedD"
 	FileMap_FileMetaInfo      = "File"
 	FileMap_SchedulerInfo     = "SchedulerMap"
-	FileMap_UserInfoMap       = "UserInfoMap"
+	FileBank_UserInfoMap      = "UserInfoMap"
 )
 
 // cess chain Transaction name

@@ -8,22 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Chain_RegisterMsg struct {
-	Acc      types.Bytes `json:"acc"`
-	Collrate types.U128  `json:"collrate"`
-	Random   types.U32   `json:"random"`
-}
-
-type SchedulerInfo struct {
-	Ip    types.Bytes     `json:"ip"`
-	Owner types.AccountID `json:"acc"`
-}
-
 // Get miner information on the cess chain
-func GetUserRegisterMsg(blocknumber uint64, walletadddr string) (Chain_RegisterMsg, error) {
+func GetUserRegisterMsg(blocknumber uint64, walletadddr string) (RegisterMsg, error) {
 	var (
 		err error
-		msg Chain_RegisterMsg
+		msg RegisterMsg
 	)
 	api := getSubstrateAPI()
 	defer func() {
@@ -103,9 +92,94 @@ func GetSchedulerInfo() ([]SchedulerInfo, error) {
 		return nil, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_SchedulerInfo)
 	}
 
-	_, err = api.RPC.State.GetStorageLatest(key, &data)
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
 		return nil, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_SchedulerInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileMap, FileMap_SchedulerInfo)
+	}
+	return data, nil
+}
+
+// Get file meta information on the cess chain
+func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
+	var (
+		err  error
+		data FileMetaInfo
+	)
+
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileMap, FileMap_FileMetaInfo)
+	}
+
+	id, err := types.EncodeToBytes(fileid)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileMap, FileMap_FileMetaInfo)
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileMap, FileMap_FileMetaInfo, types.Bytes(id))
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_FileMetaInfo)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_FileMetaInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileMap, FileMap_FileMetaInfo)
+	}
+	return data, nil
+}
+
+// Get user information on the cess chain
+func GetUserInfo(wallet string) (UserInfo, error) {
+	var (
+		err  error
+		data UserInfo
+	)
+
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserInfoMap)
+	}
+
+	bytes, err := tools.DecodeToPub(wallet)
+	if err != nil {
+		return data, err
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserInfoMap, bytes)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserInfoMap)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserInfoMap)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserInfoMap)
 	}
 	return data, nil
 }

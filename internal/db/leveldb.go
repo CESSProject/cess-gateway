@@ -25,11 +25,11 @@ type LevelDB struct {
 	db *leveldb.DB
 }
 
-var C Cache
+var c Cache
 
 func GetDB() (Cache, error) {
 	var err error
-	if C == nil {
+	if c == nil {
 		_, err = os.Stat(configs.DbDir)
 		if err != nil {
 			err = os.MkdirAll(configs.DbDir, os.ModeDir)
@@ -37,13 +37,13 @@ func GetDB() (Cache, error) {
 				return nil, err
 			}
 		}
-		C, err = newLevelDB(configs.DbDir, 0, 0, "cess-httpservice")
+		c, err = newLevelDB(configs.DbDir, 0, 0, "cess-httpservice")
 		if err != nil {
 			return nil, err
 		}
-		return C, nil
+		return c, nil
 	}
-	if err = C.Delete([]byte("NIL")); err != nil {
+	if err = c.Delete([]byte("NIL")); err != nil {
 		_, err = os.Stat(configs.DbDir)
 		if err != nil {
 			err = os.MkdirAll(configs.DbDir, os.ModeDir)
@@ -51,13 +51,13 @@ func GetDB() (Cache, error) {
 				return nil, err
 			}
 		}
-		C, err = newLevelDB(configs.DbDir, 0, 0, "cess-httpservice")
+		c, err = newLevelDB(configs.DbDir, 0, 0, "cess-httpservice")
 		if err != nil {
 			return nil, err
 		}
-		return C, nil
+		return c, nil
 	}
-	return C, nil
+	return c, nil
 }
 
 func newLevelDB(file string, cache int, handles int, namespace string) (Cache, error) {

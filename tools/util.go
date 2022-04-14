@@ -1,7 +1,10 @@
 package tools
 
 import (
+	"bytes"
+	"crypto/md5"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"io"
 	"math/rand"
@@ -55,4 +58,29 @@ func CalcFileHash(fpath string) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// Calculate MD5
+func CalcMD5(s string) ([]byte, error) {
+	h := md5.New()
+	_, err := h.Write([]byte(s))
+	if err != nil {
+		return nil, err
+	}
+	return h.Sum(nil), nil
+}
+
+// Int64 to Bytes
+func Int64ToBytes(n int64) []byte {
+	bytebuf := bytes.NewBuffer([]byte{})
+	binary.Write(bytebuf, binary.BigEndian, n)
+	return bytebuf.Bytes()
+}
+
+// Bytes to Int64
+func BytesToInt64(bys []byte) int64 {
+	bytebuff := bytes.NewBuffer(bys)
+	var data int64
+	binary.Read(bytebuff, binary.BigEndian, &data)
+	return data
 }

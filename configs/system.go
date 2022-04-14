@@ -33,6 +33,9 @@ const (
 
 	// the time to wait for the event, in seconds
 	TimeToWaitEvents = time.Duration(time.Second * 15)
+
+	//The minimum deposit when the user is working normally
+	MinimumDeposit = "10000000000000"
 )
 
 const (

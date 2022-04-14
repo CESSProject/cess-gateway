@@ -5,7 +5,6 @@ import (
 	"cess-httpservice/tools"
 	"encoding/base64"
 	"encoding/json"
-	"time"
 )
 
 type TokenMsgType struct {
@@ -25,7 +24,7 @@ func GetToken(walletaddr string, blocknumber uint64, expire int64) (string, erro
 		Walletaddr:  walletaddr,
 		Randomcode:  "",
 	}
-	uid, err := tools.GetGuid(time.Now().UnixNano())
+	uid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
 	if err != nil {
 		return "", err
 	}

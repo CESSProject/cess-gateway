@@ -20,5 +20,6 @@ func Main() {
 	r.GET("/file/download", DownfileHandler)
 	r.POST("/user/randoms", GenerateRandomkeyHandler)
 	r.POST("/user/grant", GenerateAccessTokenHandler)
+	r.GET("/file/list", FilelistHandler)
 	r.Run(":" + configs.Confile.ServicePort)
 }

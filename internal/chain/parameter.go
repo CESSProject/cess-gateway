@@ -25,6 +25,7 @@ const (
 	FileMap_SchedulerInfo     = "SchedulerMap"
 	FileBank_UserInfoMap      = "UserInfoMap"
 	FileBank_UserSpaceInfo    = "UserHoldSpaceDetails"
+	FileBank_UserFilelistInfo = "UserHoldFileList"
 )
 
 // cess chain Transaction name

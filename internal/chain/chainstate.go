@@ -225,3 +225,44 @@ func GetUserSpaceInfo(wallet string) (UserStorageSpace, error) {
 	}
 	return data, nil
 }
+
+// Get file meta information on the cess chain
+func GetFilelistInfo(wallet string) ([]types.Bytes, error) {
+	var (
+		err  error
+		data []types.Bytes
+	)
+
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+
+	bytes, err := tools.DecodeToPub(wallet)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:DecodeToPub]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserFilelistInfo, bytes)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+	return data, nil
+}

@@ -86,6 +86,7 @@ func DeletefileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+	db.Delete(key)
 	resp.Code = http.StatusOK
 	resp.Msg = "success"
 	c.JSON(http.StatusOK, resp)

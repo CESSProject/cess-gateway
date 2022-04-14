@@ -21,5 +21,6 @@ func Main() {
 	r.POST("/user/randoms", GenerateRandomkeyHandler)
 	r.POST("/user/grant", GenerateAccessTokenHandler)
 	r.GET("/file/list", FilelistHandler)
+	r.GET("/user/state", UserStateHandler)
 	r.Run(":" + configs.Confile.ServicePort)
 }

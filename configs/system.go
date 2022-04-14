@@ -36,6 +36,9 @@ const (
 
 	//The minimum deposit when the user is working normally
 	MinimumDeposit = "10000000000000"
+
+	//The minimum deposit when the user is working normally
+	CessTokenAccuracy = "1000000000000"
 )
 
 const (

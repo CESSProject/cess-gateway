@@ -36,8 +36,15 @@ func DeletefileHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
+
 	var usertoken token.TokenMsgType
-	err = json.Unmarshal([]byte(reqmsg.Token), &usertoken)
+	bytes, err := token.DecryptToken(reqmsg.Token)
+	if err != nil {
+		resp.Msg = "illegal token"
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+	err = json.Unmarshal(bytes, &usertoken)
 	if err != nil {
 		resp.Msg = "token format error"
 		c.JSON(http.StatusBadRequest, resp)

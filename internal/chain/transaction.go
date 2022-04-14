@@ -167,7 +167,7 @@ func DeleteFileOnChain(phrase, wallet, fileid string) error {
 	}()
 	keyring, err := signature.KeyringPairFromSecret(phrase, 0)
 	if err != nil {
-		return errors.Wrap(err, "KeyringPairFromSecret err")
+		return errors.Wrap(err, "KeyringPairFromSecret")
 	}
 
 	meta, err := api.RPC.State.GetMetadataLatest()
@@ -185,7 +185,7 @@ func DeleteFileOnChain(phrase, wallet, fileid string) error {
 		return errors.Wrap(err, "DecodeToPub")
 	}
 
-	c, err := types.NewCall(meta, ChainTx_FileBank_HttpDeleteFile, walletaddr, fileid_bytes)
+	c, err := types.NewCall(meta, ChainTx_FileBank_HttpDeleteFile, types.NewAccountID(walletaddr), fileid_bytes)
 	if err != nil {
 		return errors.Wrap(err, "NewCall")
 	}

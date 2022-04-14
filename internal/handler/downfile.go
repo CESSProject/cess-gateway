@@ -73,18 +73,20 @@ func DownfileHandler(c *gin.Context) {
 		return
 	}
 	v, err := db.Get(key)
-	if err.Error() == "leveldb: not found" {
-		resp.Code = http.StatusNotFound
-		resp.Msg = "This file has not been uploaded"
-		c.JSON(http.StatusNotFound, resp)
-		return
-	}
 	if err != nil {
-		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
-		return
+		if err.Error() == "leveldb: not found" {
+			resp.Code = http.StatusNotFound
+			resp.Msg = "This file has not been uploaded"
+			c.JSON(http.StatusNotFound, resp)
+			return
+		} else {
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = err.Error()
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
 	}
+
 	// local cache
 	fdir := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", token_de.Userid))
 	_, err = os.Stat(fdir)
@@ -104,6 +106,7 @@ func DownfileHandler(c *gin.Context) {
 	// file meta info
 	filemetainfo, err := chain.GetFileMetaInfo(fid)
 	if err != nil {
+		Err.Sugar().Errorf("%v", err)
 		resp.Code = http.StatusInternalServerError
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
@@ -133,7 +136,7 @@ func DownfileHandler(c *gin.Context) {
 
 // Download files from cess storage service
 func downloadFromStorage(filename, fpath string, fid int64) error {
-	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0666)
+	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0666)
 	if err != nil {
 		return err
 	}
@@ -202,11 +205,12 @@ func downloadFromStorage(filename, fpath string, fid int64) error {
 		if err != nil {
 			return err
 		}
-		wantfile.Blocks++
-		sp.Put(req)
+
 		if blockData.Blocks == blockData.BlockNum {
 			break
 		}
+		wantfile.Blocks++
+		sp.Put(req)
 	}
 	return nil
 }

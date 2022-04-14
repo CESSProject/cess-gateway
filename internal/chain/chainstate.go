@@ -3,6 +3,7 @@ package chain
 import (
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/tools"
+	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
@@ -120,25 +121,25 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileMap, FileMap_FileMetaInfo)
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileMap_FileMetaInfo)
 	}
 
-	id, err := types.EncodeToBytes(fileid)
+	id, err := types.EncodeToBytes(fmt.Sprintf("%v", fileid))
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileMap, FileMap_FileMetaInfo)
+		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileBank, FileMap_FileMetaInfo)
 	}
 
-	key, err := types.CreateStorageKey(meta, State_FileMap, FileMap_FileMetaInfo, types.Bytes(id))
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileMap_FileMetaInfo, id)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_FileMetaInfo)
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileMap_FileMetaInfo)
 	}
 
 	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_FileMetaInfo)
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileMap_FileMetaInfo)
 	}
 	if !ok {
-		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileMap, FileMap_FileMetaInfo)
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileMap_FileMetaInfo)
 	}
 	return data, nil
 }
@@ -180,6 +181,88 @@ func GetUserInfo(wallet string) (UserInfo, error) {
 	}
 	if !ok {
 		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserInfoMap)
+	}
+	return data, nil
+}
+
+// Get user space information on the cess chain
+func GetUserSpaceInfo(wallet string) (UserStorageSpace, error) {
+	var (
+		err  error
+		data UserStorageSpace
+	)
+
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceInfo)
+	}
+
+	bytes, err := tools.DecodeToPub(wallet)
+	if err != nil {
+		return data, err
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceInfo, bytes)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserSpaceInfo)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserSpaceInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserSpaceInfo)
+	}
+	return data, nil
+}
+
+// Get file meta information on the cess chain
+func GetFilelistInfo(wallet string) ([]types.Bytes, error) {
+	var (
+		err  error
+		data []types.Bytes
+	)
+
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+
+	bytes, err := tools.DecodeToPub(wallet)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:DecodeToPub]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserFilelistInfo, bytes)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserFilelistInfo)
+	}
+	if !ok {
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserFilelistInfo)
 	}
 	return data, nil
 }

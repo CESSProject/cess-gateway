@@ -24,6 +24,7 @@ const (
 	FileMap_FileMetaInfo      = "File"
 	FileMap_SchedulerInfo     = "SchedulerMap"
 	FileBank_UserInfoMap      = "UserInfoMap"
+	FileBank_UserSpaceInfo    = "UserHoldSpaceDetails"
 )
 
 // cess chain Transaction name
@@ -55,7 +56,7 @@ type SchedulerInfo struct {
 //---FileMetaInfo
 type FileMetaInfo struct {
 	File_Name   types.Bytes         `json:"file_name"`   //File name
-	FileSize    types.U128          `json:"file_size"`   //File size
+	FileSize    types.U64           `json:"file_size"`   //File size
 	FileHash    types.Bytes         `json:"file_hash"`   //File hash
 	Public      types.Bool          `json:"public"`      //Public or not
 	UserAddr    types.AccountID     `json:"user_addr"`   //Upload user's address
@@ -89,11 +90,10 @@ type FileShardInfo struct {
 
 //---UserInfo
 type UserInfo struct {
-	Collaterals   types.U128   `json:"collaterals"`
-	Space_details StorageSpace `json:"space_details"`
+	Collaterals types.U128 `json:"collaterals"`
 }
 
-type StorageSpace struct {
+type UserStorageSpace struct {
 	Purchased_space types.U128 `json:"purchased_space"`
 	Used_space      types.U128 `json:"used_space"`
 	Remaining_space types.U128 `json:"remaining_space"`

@@ -67,7 +67,14 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	u, err := chain.GetUserInfo(usertoken.Walletaddr)
+	collaterals, err := chain.GetUserInfo(usertoken.Walletaddr)
+	if err != nil {
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	spaceInfo, err := chain.GetUserSpaceInfo(usertoken.Walletaddr)
 	if err != nil {
 		resp.Code = http.StatusInternalServerError
 		resp.Msg = err.Error()
@@ -75,7 +82,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 	temp1, _ := new(big.Int).SetString(configs.MinimumDeposit, 10)
-	temp2, _ := new(big.Int).SetString(u.Collaterals.String(), 10)
+	temp2, _ := new(big.Int).SetString(collaterals.Collaterals.String(), 10)
 	if temp2.CmpAbs(temp1) < 0 {
 		resp.Code = http.StatusForbidden
 		resp.Msg = "Deposit less than 10 CESS"
@@ -83,7 +90,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	if u.Space_details.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
+	if spaceInfo.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
 		resp.Msg = "Not enough free space"
 		c.JSON(http.StatusForbidden, resp)
@@ -163,7 +170,7 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 		return
 	}
 
-	fileid, err := tools.GetGuid(time.Now().Unix())
+	fileid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] %v", fpath, err)
 		return
@@ -249,10 +256,10 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 		}
 		reqmsg := sp.Get().(*rpc.ReqMsg)
 		reqmsg.Body = info
-		reqmsg.Method = configs.RpcService_Scheduler
-		reqmsg.Service = configs.RpcMethod_WriteFile
+		reqmsg.Method = configs.RpcMethod_WriteFile
+		reqmsg.Service = configs.RpcService_Scheduler
 
-		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 		resp, err := client.Call(ctx, reqmsg)
 		defer cancel()
 		if err != nil {

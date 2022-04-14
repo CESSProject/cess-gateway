@@ -144,9 +144,142 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 				return errors.Errorf("[%v]events.FileBank_FileUpload not found", t)
 			}
 		case err = <-sub.Err():
-			return err
+			return errors.Wrapf(err, "[%v]", t)
 		case <-timeout:
-			return errors.New("upload file meta info timeout,please check your Internet!")
+			return errors.Errorf("[%v]upload file meta info timeout,please check your Internet!", t)
+		}
+	}
+}
+
+// Delete files in chain
+func DeleteFileOnChain(phrase, wallet, fileid string) error {
+	var (
+		err         error
+		accountInfo types.AccountInfo
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic]: %v", err)
+		}
+	}()
+	keyring, err := signature.KeyringPairFromSecret(phrase, 0)
+	if err != nil {
+		return errors.Wrap(err, "KeyringPairFromSecret err")
+	}
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return errors.Wrap(err, "GetMetadataLatest")
+	}
+
+	fileid_bytes, err := types.EncodeToBytes(fileid)
+	if err != nil {
+		return errors.Wrap(err, "EncodeToBytes")
+	}
+
+	walletaddr, err := tools.DecodeToPub(wallet)
+	if err != nil {
+		return errors.Wrap(err, "DecodeToPub")
+	}
+
+	c, err := types.NewCall(meta, ChainTx_FileBank_HttpDeleteFile, walletaddr, fileid_bytes)
+	if err != nil {
+		return errors.Wrap(err, "NewCall")
+	}
+
+	ext := types.NewExtrinsic(c)
+	if err != nil {
+		return errors.Wrap(err, "NewExtrinsic")
+	}
+
+	genesisHash, err := api.RPC.Chain.GetBlockHash(0)
+	if err != nil {
+		return errors.Wrap(err, "GetBlockHash")
+	}
+
+	rv, err := api.RPC.State.GetRuntimeVersionLatest()
+	if err != nil {
+		return errors.Wrap(err, "GetRuntimeVersionLatest")
+	}
+
+	key, err := types.CreateStorageKey(meta, "System", "Account", keyring.PublicKey)
+	if err != nil {
+		return errors.Wrap(err, "CreateStorageKey")
+	}
+
+	keye, err := types.CreateStorageKey(meta, "System", "Events", nil)
+	if err != nil {
+		return errors.Wrap(err, "CreateStorageKey Events")
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &accountInfo)
+	if err != nil {
+		return errors.Wrap(err, "GetStorageLatest")
+	}
+	if !ok {
+		return errors.New("GetStorageLatest return value is empty")
+	}
+
+	o := types.SignatureOptions{
+		BlockHash:          genesisHash,
+		Era:                types.ExtrinsicEra{IsMortalEra: false},
+		GenesisHash:        genesisHash,
+		Nonce:              types.NewUCompactFromUInt(uint64(accountInfo.Nonce)),
+		SpecVersion:        rv.SpecVersion,
+		Tip:                types.NewUCompactFromUInt(0),
+		TransactionVersion: rv.TransactionVersion,
+	}
+
+	// Sign the transaction
+	err = ext.Sign(keyring, o)
+	if err != nil {
+		return errors.Wrap(err, "Sign")
+	}
+
+	// Do the transfer and track the actual status
+	sub, err := api.RPC.Author.SubmitAndWatchExtrinsic(ext)
+	if err != nil {
+		return errors.Wrap(err, "SubmitAndWatchExtrinsic")
+	}
+	defer sub.Unsubscribe()
+
+	var head *types.Header
+	t := tools.RandomInRange(10000000, 99999999)
+	timeout := time.After(configs.TimeToWaitEvents)
+	for {
+		select {
+		case status := <-sub.Chan():
+			if status.IsInBlock {
+				events := MyEventRecords{}
+				head, err = api.RPC.Chain.GetHeader(status.AsInBlock)
+				if err == nil {
+					Out.Sugar().Infof("[%v] [%v]", t, head.Number)
+				}
+				h, err := api.RPC.State.GetStorageRaw(keye, status.AsInBlock)
+				if err != nil {
+					return errors.Wrapf(err, "[%v]", t)
+				}
+				err = types.EventRecordsRaw(*h).DecodeEventRecords(meta, &events)
+				if err != nil {
+					Out.Sugar().Infof("[%v]Decode event err:%v", t, err)
+				}
+				if events.FileBank_DeleteFile != nil {
+					for i := 0; i < len(events.FileBank_DeleteFile); i++ {
+						if events.FileBank_DeleteFile[i].Acc == types.NewAccountID(walletaddr) && string(events.FileBank_DeleteFile[i].Fileid) == fileid {
+							return nil
+						}
+					}
+					return errors.Errorf("[%v]events.FileBank_DeleteFile data err", t)
+				}
+				return errors.Errorf("[%v]events.FileBank_DeleteFile not found", t)
+			}
+		case err = <-sub.Err():
+			return errors.Wrapf(err, "[%v]", t)
+		case <-timeout:
+			return errors.Errorf("[%v]delete file timeout,please check your Internet!", t)
 		}
 	}
 }

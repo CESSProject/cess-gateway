@@ -304,17 +304,22 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 	Out.Sugar().Infof("[Success] Storage file:%s successful", fpath)
 	key, err := tools.CalcMD5(fmt.Sprintf("%v", userid) + file.Name())
 	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, userid, err)
+		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
 		return
 	}
 	db, err := db.GetDB()
 	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, userid, err)
+		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
 		return
 	}
 	err = db.Put(key, tools.Int64ToBytes(fileid))
 	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, userid, err)
+		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
+		return
+	}
+	err = db.Put(tools.Int64ToBytes(fileid), []byte(file.Name()))
+	if err != nil {
+		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
 		return
 	}
 	fmt.Printf("[Success] DB record a file:%s successful", fpath)

@@ -39,6 +39,7 @@ const (
 	ChainTx_FileMap_Add_schedule     = "FileMap.registration_scheduler"
 	ChainTx_FileBank_PutMetaInfo     = "FileBank.update_dupl"
 	ChainTx_FileBank_HttpUpload      = "FileBank.http_upload"
+	ChainTx_FileBank_HttpDeleteFile  = "FileBank.http_delete"
 )
 
 //---RegisterMsg

@@ -36,3 +36,9 @@ type UserStateMsg struct {
 	FreeSpace  string `json:"freeSpace"`
 	Walletaddr string `json:"walletaddr"`
 }
+
+// Request structure when user registers
+type ReqDeleteFileMsg struct {
+	Token    string `json:"token"`
+	Filename string `json:"filename"`
+}

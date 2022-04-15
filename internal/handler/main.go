@@ -23,5 +23,6 @@ func Main() {
 	r.GET("/file/list", FilelistHandler)
 	r.GET("/user/state", UserStateHandler)
 	r.POST("/file/delete", DeletefileHandler)
+	r.GET("/space/price", QueryPriceHandler)
 	r.Run(":" + configs.Confile.ServicePort)
 }

@@ -266,3 +266,71 @@ func GetFilelistInfo(wallet string) ([]types.Bytes, error) {
 	}
 	return data, nil
 }
+
+//Query sold space information on the cess chain
+func QuerySoldSpace() (uint64, error) {
+	var (
+		err  error
+		data types.U128
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return 0, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_Sminer, Sminer_PurchasedSpace)
+	}
+
+	key, err := types.CreateStorageKey(meta, State_Sminer, Sminer_PurchasedSpace)
+	if err != nil {
+		return 0, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_Sminer, Sminer_PurchasedSpace)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return 0, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_Sminer, Sminer_PurchasedSpace)
+	}
+	if !ok {
+		return 0, nil
+	}
+	return data.Uint64(), nil
+}
+
+//Query total space information on the cess chain
+func QueryTotalSpace() (uint64, error) {
+	var (
+		err  error
+		data types.U128
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return 0, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_Sminer, Sminer_TotalSpace)
+	}
+
+	key, err := types.CreateStorageKey(meta, State_Sminer, Sminer_TotalSpace)
+	if err != nil {
+		return 0, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_Sminer, Sminer_TotalSpace)
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return 0, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_Sminer, Sminer_TotalSpace)
+	}
+	if !ok {
+		return 0, nil
+	}
+	return data.Uint64(), nil
+}

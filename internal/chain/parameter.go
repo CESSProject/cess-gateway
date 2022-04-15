@@ -26,6 +26,8 @@ const (
 	FileBank_UserInfoMap      = "UserInfoMap"
 	FileBank_UserSpaceInfo    = "UserHoldSpaceDetails"
 	FileBank_UserFilelistInfo = "UserHoldFileList"
+	Sminer_PurchasedSpace     = "PurchasedSpace"
+	Sminer_TotalSpace         = "AvailableSpace"
 )
 
 // cess chain Transaction name

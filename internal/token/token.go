@@ -16,7 +16,7 @@ type TokenMsgType struct {
 }
 
 // Generate user token
-func GetToken(walletaddr string, blocknumber uint64, expire int64) (string, error) {
+func GetToken(walletaddr string, blocknumber uint64, userid, expire int64) (string, error) {
 	token := TokenMsgType{
 		Userid:      0,
 		Blocknumber: blocknumber,
@@ -24,12 +24,17 @@ func GetToken(walletaddr string, blocknumber uint64, expire int64) (string, erro
 		Walletaddr:  walletaddr,
 		Randomcode:  "",
 	}
-	uid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
-	if err != nil {
-		return "", err
+
+	if userid == 0 {
+		uid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
+		if err != nil {
+			return "", err
+		}
+		token.Userid = uid
+	} else {
+		token.Userid = userid
 	}
 
-	token.Userid = uid
 	token.Randomcode = tools.GetRandomcode(16)
 
 	bytes, err := json.Marshal(token)

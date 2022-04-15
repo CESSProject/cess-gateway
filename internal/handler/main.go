@@ -19,9 +19,11 @@ func Main() {
 	r.POST("/file/upload", UpfileHandler)
 	r.GET("/file/download", DownfileHandler)
 	r.POST("/user/randoms", GenerateRandomkeyHandler)
-	r.POST("/user/grant", GenerateAccessTokenHandler)
+	r.POST("/user/grant", GrantTokenHandler)
+	r.POST("/user/regrant", RegrantTokenHandler)
 	r.GET("/file/list", FilelistHandler)
 	r.GET("/user/state", UserStateHandler)
 	r.POST("/file/delete", DeletefileHandler)
+	r.GET("/space/price", QueryPriceHandler)
 	r.Run(":" + configs.Confile.ServicePort)
 }

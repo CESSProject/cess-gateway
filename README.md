@@ -13,7 +13,7 @@ we are happy to communicate with you
 * The block explorer address is http://139.224.19.104:3000/?rpc=ws%3A%2F%2F106.15.44.155%3A9948%2F#/accounts
 * The address for free access to tCESS tokens on the testnet is http://47.243.82.77:9708/transfer
 
-## Usage for bucket
+## Usage for httpservice
 
 **Before using, you should refer to the following process to get the token**
 
@@ -22,6 +22,7 @@ we are happy to communicate with you
 
 * Obtain random numbers (2) from the `IP/user/randoms` interface of httpservice through tools such as postman or curl,If everything works fine, you will get something like the following:
 ```
+# curl IP/user/randoms -X POST -d '{"walletaddr": "your wallet address"}' --header "Content-Type: application/json"
 {"code":200,"msg":"success","random1":116184,"random2":468019}
 ```
 
@@ -29,10 +30,12 @@ we are happy to communicate with you
 ![userAuth](https://github.com/CESSProject/W3F-illustration/blob/main/httpservice/userAuth.PNG)
 
 * Operate the purchase space interface in the block explorer to purchase space
+![purchaseSpace](https://github.com/CESSProject/W3F-illustration/blob/main/httpservice/purchaseSpace.PNG)
 
 * Operate the `IP/user/grant` interface of httpservice, and tell httpservice the block number and the second random number. If all data verification is successful, httpservice will return the user token information (as shown in the data field below), you need to save the token.
 
 ```
+# curl IP/user/grant -X POST -d '{"blocknumber": your blocknumber, "walletaddr": "your wallet address", "random2": 468019}'  --header "Content-Type: application/json"
 {"code":200,"msg":"success","data":"d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw=="}
 ```
 

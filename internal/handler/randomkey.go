@@ -43,6 +43,14 @@ func GenerateRandomkeyHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
+
+	err = tools.VerityAddress(reqmsg.Walletaddr, tools.SubstratePrefix)
+	if err != nil {
+		resp.Msg = "Please enter the correct substrate wallet address"
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
 	resp.Code = http.StatusInternalServerError
 	randomkey1, randomkey2 := 0, 0
 	value := ""

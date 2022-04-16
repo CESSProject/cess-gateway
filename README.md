@@ -93,4 +93,4 @@ we are happy to communicate with you
 ```
 
 ## License
-Licensed under [Apache 2.0](https://github.com/CESSProject/cess-bucket/blob/main/LICENSE)
+Licensed under [Apache 2.0](https://github.com/CESSProject/cess-httpservice/blob/main/LICENSE)

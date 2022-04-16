@@ -1,6 +1,6 @@
 # <h1 align="center">CESS-HTTPSERVICE &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.16-blue.svg" /></a></h1>
 
-cess-httpservice is an access service based on the RESTful API provided by the cess cloud storage platform.
+cess-httpservice is a service using RESTful API specification for accessing cess cloud storage.
 
 ## Reporting a Vulnerability
 

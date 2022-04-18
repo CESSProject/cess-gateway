@@ -42,7 +42,10 @@ const (
 )
 
 const (
+	//Scheduler's rpc service name
 	RpcService_Scheduler = "wservice"
-	RpcMethod_WriteFile  = "writefile"
-	RpcMethod_ReadFile   = "readfile"
+	//write method of rpc service
+	RpcMethod_WriteFile = "writefile"
+	//read method of rpc service
+	RpcMethod_ReadFile = "readfile"
 )

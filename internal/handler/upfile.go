@@ -17,7 +17,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -157,7 +156,12 @@ func UpfileHandler(c *gin.Context) {
 // Upload files to cess storage system
 func uploadToStorage(fpath, walletaddr string, userid int64) {
 	time.Sleep(time.Second)
-
+	defer func() {
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic]: %v", err)
+		}
+	}()
 	file, err := os.Stat(fpath)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] %v", fpath, err)
@@ -229,12 +233,13 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 	var client *rpc.Client
 	for i, schd := range schds {
 		wsURL := "ws://" + string(base58.Decode(string(schd.Ip)))
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		client, err = rpc.DialWebsocket(ctx, wsURL, "")
-		defer cancel()
+		//defer cancel()
 		if err != nil {
 			Err.Sugar().Errorf("[%v] %v", fpath, string(schds[i].Ip))
 			if i == len(schds) {
+				Err.Sugar().Errorf("[%v] All scheduler not working", len(schds))
 				return
 			}
 
@@ -242,11 +247,14 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 			break
 		}
 	}
-	sp := sync.Pool{
-		New: func() interface{} {
-			return &rpc.ReqMsg{}
-		},
-	}
+	// sp := sync.Pool{
+	// 	New: func() interface{} {
+	// 		return &rpc.ReqMsg{}
+	// 	},
+	// }
+	reqmsg := rpc.ReqMsg{}
+	reqmsg.Method = configs.RpcMethod_WriteFile
+	reqmsg.Service = configs.RpcService_Scheduler
 	commit := func(num int, data []byte) error {
 		blockinfo.BlockNum = int32(num) + 1
 		blockinfo.Data = data
@@ -254,14 +262,12 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 		if err != nil {
 			return errors.Wrap(err, "[Error]Serialization error, please upload again")
 		}
-		reqmsg := sp.Get().(*rpc.ReqMsg)
+		//reqmsg := sp.Get().(*rpc.ReqMsg)
 		reqmsg.Body = info
-		reqmsg.Method = configs.RpcMethod_WriteFile
-		reqmsg.Service = configs.RpcService_Scheduler
 
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		resp, err := client.Call(ctx, reqmsg)
-		defer cancel()
+		ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
+		resp, err := client.Call(ctx, &reqmsg)
+		//defer cancel()
 		if err != nil {
 			return errors.Wrap(err, "[Error]Failed to transfer file to scheduler,error")
 		}
@@ -275,7 +281,7 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 			err = errors.New(res.Msg)
 			return errors.Wrap(err, "[Error]Upload file fail!scheduler problem")
 		}
-		sp.Put(reqmsg)
+		//sp.Put(reqmsg)
 		return nil
 	}
 	blocks := len(filebytes) / blocksize

@@ -6,10 +6,8 @@ import (
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/rpc"
-	"cess-httpservice/internal/token"
 	"cess-httpservice/tools"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -28,38 +26,15 @@ func DownfileHandler(c *gin.Context) {
 		Code: http.StatusBadRequest,
 		Msg:  "",
 	}
-	usertoken := c.Query("token")
 	filename := c.Query("filename")
-	if usertoken == "" || filename == "" {
-		resp.Msg = "token or filename is empty"
+	if filename == "" {
+		resp.Msg = "filename is empty"
 		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-
-	// Parse token
-	bytes, err := token.DecryptToken(usertoken)
-	if err != nil {
-		resp.Msg = "invalid token"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-	var token_de token.TokenMsgType
-	err = json.Unmarshal(bytes, &token_de)
-	if err != nil {
-		resp.Msg = "token format error"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-
-	if time.Now().Unix() > token_de.Expire {
-		resp.Code = http.StatusForbidden
-		resp.Msg = "token expired"
-		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
 	// Determine if the user has uploaded the file
-	key, err := tools.CalcMD5(fmt.Sprintf("%v", token_de.Userid) + filename)
+	key, err := tools.CalcMD5(filename)
 	if err != nil {
 		resp.Msg = "invalid filename"
 		c.JSON(http.StatusBadRequest, resp)
@@ -88,7 +63,7 @@ func DownfileHandler(c *gin.Context) {
 	}
 
 	// local cache
-	fdir := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", token_de.Userid))
+	fdir := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", string(key)))
 	_, err = os.Stat(fdir)
 	if err != nil {
 		os.MkdirAll(fdir, os.ModeDir)
@@ -120,7 +95,7 @@ func DownfileHandler(c *gin.Context) {
 	}
 
 	// Download the file from the scheduler service
-	err = downloadFromStorage(filename, fpath, fid)
+	err = downloadFromStorage(fpath, fid)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", fpath, fid, err)
 		resp.Code = http.StatusInternalServerError
@@ -132,10 +107,11 @@ func DownfileHandler(c *gin.Context) {
 	c.Writer.Header().Add("inline", fmt.Sprintf("inline; filename=%v", filename))
 	c.Writer.Header().Add("Content-Type", "application/octet-stream")
 	c.File(fpath)
+	defer os.Remove(fpath)
 }
 
 // Download files from cess storage service
-func downloadFromStorage(filename, fpath string, fid int64) error {
+func downloadFromStorage(fpath string, fid int64) error {
 	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0666)
 	if err != nil {
 		return err

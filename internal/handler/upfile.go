@@ -6,10 +6,8 @@ import (
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/rpc"
-	"cess-httpservice/internal/token"
 	"cess-httpservice/tools"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,27 +28,6 @@ func UpfileHandler(c *gin.Context) {
 		Code: http.StatusBadRequest,
 		Msg:  "",
 	}
-	usertoken_en := c.PostForm("token")
-	bytes, err := token.DecryptToken(usertoken_en)
-	if err != nil {
-		resp.Msg = "illegal token"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-	var usertoken token.TokenMsgType
-	err = json.Unmarshal(bytes, &usertoken)
-	if err != nil {
-		resp.Msg = "token format error"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-
-	if time.Now().Unix() > usertoken.Expire {
-		resp.Code = http.StatusForbidden
-		resp.Msg = "token expired"
-		c.JSON(http.StatusForbidden, resp)
-		return
-	}
 
 	content_length := c.Request.ContentLength
 	if content_length <= 0 {
@@ -66,26 +43,11 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	collaterals, err := chain.GetUserInfo(usertoken.Walletaddr)
+	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountAddr)
 	if err != nil {
 		resp.Code = http.StatusInternalServerError
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
-	spaceInfo, err := chain.GetUserSpaceInfo(usertoken.Walletaddr)
-	if err != nil {
-		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
-	temp1, _ := new(big.Int).SetString(configs.MinimumDeposit, 10)
-	temp2, _ := new(big.Int).SetString(collaterals.Collaterals.String(), 10)
-	if temp2.CmpAbs(temp1) < 0 {
-		resp.Code = http.StatusForbidden
-		resp.Msg = "Deposit less than 10 CESS"
-		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
@@ -97,8 +59,16 @@ func UpfileHandler(c *gin.Context) {
 	}
 
 	file_c, _, _ := c.Request.FormFile("file")
+
+	fnamemd5, err := tools.CalcMD5(file_p.Filename)
+	if err != nil {
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
 	//userpath := filepath.Join(configs.FileCacheDir, "test")
-	userpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.Userid))
+	userpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", string(fnamemd5)))
 	_, err = os.Stat(userpath)
 	if err != nil {
 		err = os.MkdirAll(userpath, os.ModeDir)
@@ -113,8 +83,9 @@ func UpfileHandler(c *gin.Context) {
 	fpath := filepath.Join(userpath, file_p.Filename)
 	_, err = os.Stat(fpath)
 	if err == nil {
-		resp.Msg = "duplicate filename"
-		c.JSON(http.StatusBadRequest, resp)
+		resp.Code = http.StatusForbidden
+		resp.Msg = "duplicate file name"
+		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
@@ -144,17 +115,39 @@ func UpfileHandler(c *gin.Context) {
 		}
 		f.Write(buf[:n])
 	}
+
+	hash, err := tools.CalcFileHash2(f)
+	if err != nil {
+		Err.Sugar().Errorf("%v", err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = err.Error()
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
+	db, err := db.GetDB()
+	ok, _ := db.Has([]byte(hash))
+	if ok {
+		os.RemoveAll(fpath)
+		resp.Code = http.StatusForbidden
+		resp.Msg = "duplicate file hash"
+		c.JSON(http.StatusForbidden, resp)
+		return
+	} else {
+		db.Put([]byte(hash), []byte(fpath))
+	}
+
 	resp.Code = http.StatusOK
 	resp.Msg = "success"
 	c.JSON(http.StatusOK, resp)
 
-	go uploadToStorage(fpath, usertoken.Walletaddr, usertoken.Userid)
+	go uploadToStorage(fpath, string(fnamemd5))
 
 	return
 }
 
 // Upload files to cess storage system
-func uploadToStorage(fpath, walletaddr string, userid int64) {
+func uploadToStorage(fpath, fnamemd5 string) {
 	time.Sleep(time.Second)
 	defer func() {
 		err := recover()
@@ -173,13 +166,11 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 		Err.Sugar().Errorf("[%v] %v", fpath, err)
 		return
 	}
-
 	fileid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] %v", fpath, err)
 		return
 	}
-
 	var blockinfo rpc.FileUploadInfo
 	blockinfo.Backups = "3"
 	blockinfo.FileId = fmt.Sprintf("%v", fileid)
@@ -215,8 +206,8 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 	}
 
 	err = chain.FileMetaInfoOnChain(
-		configs.Confile.TransactionPrK,
-		walletaddr,
+		configs.Confile.AccountSeed,
+		configs.Confile.AccountAddr,
 		file.Name(),
 		fmt.Sprintf("%v", fileid),
 		filehash,
@@ -308,17 +299,12 @@ func uploadToStorage(fpath, walletaddr string, userid int64) {
 	os.Remove(fpath)
 	fmt.Printf("[Success] Storage file:%s successful", fpath)
 	Out.Sugar().Infof("[Success] Storage file:%s successful", fpath)
-	key, err := tools.CalcMD5(fmt.Sprintf("%v", userid) + file.Name())
-	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
-		return
-	}
 	db, err := db.GetDB()
 	if err != nil {
 		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
 		return
 	}
-	err = db.Put(key, tools.Int64ToBytes(fileid))
+	err = db.Put([]byte(fnamemd5), tools.Int64ToBytes(fileid))
 	if err != nil {
 		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
 		return

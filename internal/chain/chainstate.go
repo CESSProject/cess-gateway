@@ -145,10 +145,10 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 }
 
 // Get user information on the cess chain
-func GetUserInfo(wallet string) (UserInfo, error) {
+func GetSpaceDetailsInfo(wallet string) ([]UserSpaceListInfo, error) {
 	var (
 		err  error
-		data UserInfo
+		data []UserSpaceListInfo
 	)
 
 	api := getSubstrateAPI()
@@ -162,7 +162,7 @@ func GetUserInfo(wallet string) (UserInfo, error) {
 
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserInfoMap)
+		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceList)
 	}
 
 	bytes, err := tools.DecodeToPub(wallet)
@@ -170,17 +170,17 @@ func GetUserInfo(wallet string) (UserInfo, error) {
 		return data, err
 	}
 
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserInfoMap, bytes)
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceList, bytes)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserInfoMap)
+		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserSpaceList)
 	}
 
 	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserInfoMap)
+		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserSpaceList)
 	}
 	if !ok {
-		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserInfoMap)
+		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserSpaceList)
 	}
 	return data, nil
 }
@@ -333,4 +333,21 @@ func QueryTotalSpace() (uint64, error) {
 		return 0, nil
 	}
 	return data.Uint64(), nil
+}
+
+// Get lastest block height
+func GetLastestBlockHeight() (uint32, error) {
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		err := recover()
+		if err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+	head, err := api.RPC.Chain.GetHeaderLatest()
+	if err != nil {
+		return 0, errors.Wrapf(err, "[GetHeaderLatest]")
+	}
+	return uint32(head.Number), nil
 }

@@ -29,12 +29,16 @@ type ReqRandomkeyMsg struct {
 
 // user state structure
 type UserStateMsg struct {
-	UserId     int64  `json:"userId"`
-	Deposit    string `json:"deposit"`
-	TotalSpace string `json:"totalSpace"`
-	UsedSpace  string `json:"usedSpace"`
-	FreeSpace  string `json:"freeSpace"`
-	Walletaddr string `json:"walletaddr"`
+	TotalSpace   string `json:"totalSpace"`
+	UsedSpace    string `json:"usedSpace"`
+	FreeSpace    string `json:"freeSpace"`
+	SpaceDetails []SpaceDetailsMsg
+}
+
+// user space details structure
+type SpaceDetailsMsg struct {
+	Size     uint64 `json:"size"`
+	Deadline uint32 `json:"deadline"`
 }
 
 // Request structure when user registers

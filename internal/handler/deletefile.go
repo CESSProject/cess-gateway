@@ -5,13 +5,11 @@ import (
 	"cess-httpservice/internal/chain"
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
-	"cess-httpservice/internal/token"
 	"cess-httpservice/tools"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,29 +35,8 @@ func DeletefileHandler(c *gin.Context) {
 		return
 	}
 
-	var usertoken token.TokenMsgType
-	bytes, err := token.DecryptToken(reqmsg.Token)
-	if err != nil {
-		resp.Msg = "illegal token"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-	err = json.Unmarshal(bytes, &usertoken)
-	if err != nil {
-		resp.Msg = "token format error"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-
-	if time.Now().Unix() > usertoken.Expire {
-		resp.Code = http.StatusForbidden
-		resp.Msg = "token expired"
-		c.JSON(http.StatusForbidden, resp)
-		return
-	}
-
 	// Determine if the user has uploaded the file
-	key, err := tools.CalcMD5(fmt.Sprintf("%v", usertoken.Userid) + reqmsg.Filename)
+	key, err := tools.CalcMD5(reqmsg.Filename)
 	if err != nil {
 		resp.Msg = "invalid filename"
 		c.JSON(http.StatusBadRequest, resp)
@@ -87,7 +64,7 @@ func DeletefileHandler(c *gin.Context) {
 	}
 
 	//Delete files in cess storage service
-	err = chain.DeleteFileOnChain(configs.Confile.TransactionPrK, usertoken.Walletaddr, fmt.Sprintf("%v", tools.BytesToInt64(fid)))
+	err = chain.DeleteFileOnChain(configs.Confile.AccountSeed, configs.Confile.AccountAddr, fmt.Sprintf("%v", tools.BytesToInt64(fid)))
 	if err != nil {
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)

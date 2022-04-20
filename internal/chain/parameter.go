@@ -23,7 +23,7 @@ const (
 	SegmentBook_UnVerifiedD   = "UnVerifiedD"
 	FileMap_FileMetaInfo      = "File"
 	FileMap_SchedulerInfo     = "SchedulerMap"
-	FileBank_UserInfoMap      = "UserInfoMap"
+	FileBank_UserSpaceList    = "UserSpaceList"
 	FileBank_UserSpaceInfo    = "UserHoldSpaceDetails"
 	FileBank_UserFilelistInfo = "UserHoldFileList"
 	Sminer_PurchasedSpace     = "PurchasedSpace"
@@ -93,8 +93,9 @@ type FileShardInfo struct {
 }
 
 //---UserInfo
-type UserInfo struct {
-	Collaterals types.U128 `json:"collaterals"`
+type UserSpaceListInfo struct {
+	Size     types.U128 `json:"size"`
+	Deadline types.U32  `json:"deadline"`
 }
 
 type UserStorageSpace struct {

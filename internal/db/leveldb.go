@@ -37,7 +37,7 @@ func GetDB() (Cache, error) {
 				return nil, err
 			}
 		}
-		c, err = newLevelDB(configs.DbDir, 0, 0, "cess-httpservice")
+		c, err = newLevelDB(configs.DbDir, 0, 0, "cess-gateway")
 		if err != nil {
 			return nil, err
 		}
@@ -51,7 +51,7 @@ func GetDB() (Cache, error) {
 				return nil, err
 			}
 		}
-		c, err = newLevelDB(configs.DbDir, 0, 0, "cess-httpservice")
+		c, err = newLevelDB(configs.DbDir, 0, 0, "cess-gateway")
 		if err != nil {
 			return nil, err
 		}

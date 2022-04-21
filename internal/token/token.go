@@ -4,18 +4,11 @@ import (
 	"cess-httpservice/configs"
 	"cess-httpservice/internal/encryption"
 	"cess-httpservice/tools"
-	"encoding/base64"
 	"encoding/json"
 	"time"
-)
 
-// type TokenMsgType struct {
-// 	Userid      int64  `json:"userid"`
-// 	Blocknumber uint64 `json:"blocknumber"`
-// 	Expire      int64  `json:"expire"`
-// 	Walletaddr  string `json:"walletaddr"`
-// 	Randomcode  string `json:"randomcode"`
-// }
+	"github.com/btcsuite/btcutil/base58"
+)
 
 type TokenMsgType struct {
 	UserId          int64  `json:"userId"`
@@ -51,16 +44,39 @@ func GenerateNewToken(mailbox string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(en), nil
+
+	return base58.Encode(en), nil
+}
+
+// refresh a old token
+func RefreshToken(old TokenMsgType) (string, error) {
+	var (
+		err   error
+		token = TokenMsgType{}
+	)
+	token.UserId = old.UserId
+	token.CreateUserTime = old.CreateUserTime
+	token.Mailbox = old.Mailbox
+	t := time.Now().Unix()
+	token.CreateTokenTime = t
+	token.ExpirationTime = time.Unix(t, 0).Add(configs.ValidTimeOfToken).Unix()
+	token.RandomCode = tools.GetRandomcode(16)
+	bytes, err := json.Marshal(token)
+	if err != nil {
+		return "", err
+	}
+
+	en, err := encryption.RSA_Encrypt(bytes)
+	if err != nil {
+		return "", err
+	}
+
+	return base58.Encode(en), nil
 }
 
 // Decode user token
 func DecryptToken(token string) ([]byte, error) {
-	en, err := base64.StdEncoding.DecodeString(token)
-	if err != nil {
-		return nil, err
-	}
-	bytes, err := encryption.RSA_Decrypt(en)
+	bytes, err := encryption.RSA_Decrypt(base58.Decode(token))
 	if err != nil {
 		return nil, err
 	}

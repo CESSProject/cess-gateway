@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"cess-httpservice/configs"
-	"cess-httpservice/internal/chain"
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/token"
@@ -16,112 +14,121 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler at user registration
+// It is used to authorize users
 func GrantTokenHandler(c *gin.Context) {
 	var resp = RespMsg{
 		Code: http.StatusBadRequest,
-		Msg:  "",
+		Msg:  Status_400_default,
 	}
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "bad request"
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-	var reqmsg ReqRegistrationMsg
+	var reqmsg ReqGrantMsg
 	err = json.Unmarshal(body, &reqmsg)
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "body format error"
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
-	regmsg, err := chain.GetUserRegisterMsg(reqmsg.Blocknumber, reqmsg.Walletaddr)
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = err.Error()
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
+	// TODO: Check if the email format is correct
 
 	resp.Code = http.StatusInternalServerError
 	db, err := db.GetDB()
 	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Msg = Status_500_db
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	bytes, err := db.Get([]byte(reqmsg.Walletaddr + "_random"))
+	bytes, err := db.Get([]byte(reqmsg.Mailbox))
 	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = err.Error()
+		if err.Error() == "leveldb: not found" {
+			//TODO: Send verification code to email
+			return
+		}
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Msg = Status_500_db
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	value := strings.Split(string(bytes), "#")
-	if len(value) != 3 {
-		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = "Please get the random number again (valid within 5 minutes)"
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
-	randomExpire, err := strconv.Atoi(value[2])
-	if time.Since(time.Unix(int64(randomExpire), 0)).Minutes() > configs.RandomValidTime {
-		db.Delete([]byte(reqmsg.Walletaddr + "_random"))
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Code = http.StatusForbidden
-		resp.Msg = "Please get the random number again (valid within 5 minutes)"
-		c.JSON(http.StatusForbidden, resp)
-		return
-	}
-	random1Local, _ := strconv.Atoi(value[0])
-	random2Local, _ := strconv.Atoi(value[1])
-	if reqmsg.Random2 != random2Local || random1Local != int(regmsg.Random) {
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Code = http.StatusForbidden
-		resp.Msg = "Authentication failed"
-		c.JSON(http.StatusForbidden, resp)
+	v := strings.Split(string(bytes), "#")
+	if len(v) == 2 {
+		vi, err := strconv.ParseInt(v[1], 10, 64)
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+			resp.Msg = Status_500_unexpected
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		if time.Now().Unix() >= time.Unix(vi, 0).Unix() {
+			Out.Sugar().Infof("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+			resp.Code = http.StatusOK
+			resp.Msg = Status_200_expired
+			c.JSON(http.StatusOK, resp)
+			return
+		}
+		vi, err = strconv.ParseInt(v[0], 10, 32)
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+			resp.Msg = Status_500_unexpected
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		if reqmsg.Captcha != vi {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+			resp.Msg = Status_400_captcha
+			c.JSON(http.StatusBadRequest, resp)
+			return
+		}
+		//TODO:Send token to user mailbox
 		return
 	}
 
-	bytes, err = db.Get([]byte(reqmsg.Walletaddr + "_token"))
-	if err.Error() == "leveldb: not found" {
-		//Generate user token
-		expire := time.Now().Add(time.Hour * 24 * 7).Unix()
-		tk, err := token.GetToken(reqmsg.Walletaddr, reqmsg.Blocknumber, 0, expire)
-		if err != nil {
-			Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-			resp.Msg = err.Error()
-			c.JSON(http.StatusInternalServerError, resp)
-			return
-		}
-		//store token to database
-		err = db.Put([]byte(reqmsg.Walletaddr+"_token"), []byte(tk))
-		if err != nil {
-			Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-			resp.Msg = err.Error()
-			c.JSON(http.StatusInternalServerError, resp)
-			return
-		}
-		resp.Code = 200
-		resp.Msg = "success"
-		resp.Data = tk
-		c.JSON(http.StatusOK, resp)
-		return
-	}
+	bytes, err = token.DecryptToken(string(bytes))
 	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", reqmsg.Blocknumber, reqmsg.Walletaddr, err)
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Msg = Status_500_unexpected
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	resp.Code = 200
-	resp.Msg = "success"
-	resp.Data = string(bytes)
+	var utoken token.TokenMsgType
+	err = json.Unmarshal(bytes, &utoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
+	if time.Now().Unix() < utoken.ExpirationTime {
+		resp.Code = http.StatusOK
+		resp.Msg = Status_200_default
+		resp.Data = "token=" + string(bytes)
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	newtoken, err := token.RefreshToken(utoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	err = db.Put([]byte(utoken.Mailbox), []byte(newtoken))
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Msg = Status_500_db
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	resp.Code = http.StatusOK
+	resp.Msg = Status_200_default
+	resp.Data = "token=" + newtoken
 	c.JSON(http.StatusOK, resp)
 	return
 }

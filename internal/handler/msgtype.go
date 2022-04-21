@@ -5,6 +5,7 @@ const (
 	Status_200_expired    = "captcha has expired and a new captcha has been sent to your mailbox"
 	Status_400_default    = "HTTP error"
 	Status_400_captcha    = "captcha error"
+	Status_400_mailbox    = "Please check your email address and whether to enable SMTP service"
 	Status_500_db         = "Server internal data error"
 	Status_500_unexpected = "Server unexpected error"
 )

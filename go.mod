@@ -10,6 +10,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.7.7
+	github.com/go-gomail/gomail v0.0.0-20160411212932-81ebce5c23df
 	github.com/golang/protobuf v1.5.2
 	github.com/gorilla/websocket v1.4.2
 	github.com/natefinch/lumberjack v2.0.0+incompatible
@@ -27,6 +28,8 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	google.golang.org/protobuf v1.27.1
+	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
+	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0 // indirect
 	storj.io/common v0.0.0-20220405183405-ffdc3ab808c6
 )

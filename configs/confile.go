@@ -8,11 +8,13 @@ import (
 )
 
 type Configfile struct {
-	ChainAddr   string `toml:"ChainAddr"`
-	ServiceAddr string `toml:"ServiceAddr"`
-	ServicePort string `toml:"ServicePort"`
-	AccountAddr string `toml:"AccountAddr"`
-	AccountSeed string `toml:"AccountSeed"`
+	ChainAddr     string `toml:"ChainAddr"`
+	ServiceAddr   string `toml:"ServiceAddr"`
+	ServicePort   string `toml:"ServicePort"`
+	AccountAddr   string `toml:"AccountAddr"`
+	AccountSeed   string `toml:"AccountSeed"`
+	EmailAddress  string `toml:"EmailAddress"`
+	EmailPassword string `toml:"EmailPassword"`
 }
 
 var Confile = new(Configfile)

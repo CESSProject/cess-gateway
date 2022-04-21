@@ -19,6 +19,7 @@ func DeletefileHandler(c *gin.Context) {
 		Code: http.StatusBadRequest,
 		Msg:  "",
 	}
+
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)

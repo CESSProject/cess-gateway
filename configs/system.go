@@ -39,6 +39,9 @@ const (
 
 	//The minimum deposit when the user is working normally
 	CessTokenAccuracy = "1000000000000"
+
+	// The validity period of the token, the default is 30 days
+	ValidTimeOfToken = time.Duration(time.Hour * 24 * 30)
 )
 
 const (

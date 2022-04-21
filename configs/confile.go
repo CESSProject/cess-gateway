@@ -15,6 +15,8 @@ type Configfile struct {
 	AccountSeed   string `toml:"AccountSeed"`
 	EmailAddress  string `toml:"EmailAddress"`
 	EmailPassword string `toml:"EmailPassword"`
+	EmailHost     string `toml:"EmailHost"`
+	EmailHostPort int    `toml:"EmailHostPort"`
 }
 
 var Confile = new(Configfile)

@@ -1,12 +1,27 @@
 package handler
 
 const (
-	Status_200_default    = "success"
-	Status_200_expired    = "captcha has expired and a new captcha has been sent to your mailbox"
-	Status_400_default    = "HTTP error"
-	Status_400_captcha    = "captcha error"
-	Status_400_mailbox    = "Please check your email address and whether to enable SMTP service"
+	//200
+	Status_200_default = "success"
+	Status_200_expired = "captcha has expired and a new captcha has been sent to your mailbox"
+
+	//400
+	Status_400_default     = "HTTP error"
+	Status_400_EmailFormat = "Email format error"
+	Status_400_captcha     = "captcha error"
+	Status_400_EmailSmpt   = "Please check your email address and whether to enable SMTP service"
+
+	//401
+	Status_401_token   = "Unauthorized"
+	Status_401_expired = "token expired"
+
+	//403
+	Status_403_expired    = "not enough space"
+	Status_403_dufilename = "duplicate filename"
+
+	//500
 	Status_500_db         = "Server internal data error"
+	Status_500_chain      = "Server internal chain data error"
 	Status_500_unexpected = "Server unexpected error"
 )
 

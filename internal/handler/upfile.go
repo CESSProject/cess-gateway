@@ -6,8 +6,10 @@ import (
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/rpc"
+	"cess-httpservice/internal/token"
 	"cess-httpservice/tools"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -25,56 +28,80 @@ import (
 
 func UpfileHandler(c *gin.Context) {
 	var resp = RespMsg{
-		Code: http.StatusBadRequest,
-		Msg:  "",
+		Code: http.StatusUnauthorized,
+		Msg:  Status_401_token,
 	}
-
-	content_length := c.Request.ContentLength
-	if content_length <= 0 {
-		resp.Msg = "empty file"
-		c.JSON(http.StatusBadRequest, resp)
+	// token
+	htoken := c.Request.Header.Get("Authorization")
+	fmt.Println(htoken)
+	if htoken == "" {
+		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+	var usertoken token.TokenMsgType
+	err := json.Unmarshal([]byte(htoken), &usertoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] token format error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
+	if time.Now().Unix() >= usertoken.ExpirationTime {
+		Err.Sugar().Errorf("[%v] [%v] token expired", c.ClientIP(), usertoken.Mailbox)
+		resp.Msg = Status_401_expired
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	// client data
+	resp.Code = http.StatusBadRequest
+	resp.Msg = Status_400_default
+	content_length := c.Request.ContentLength
+	if content_length <= 0 {
+		Err.Sugar().Errorf("[%v] [%v] contentLength <= 0", c.ClientIP(), usertoken.Mailbox)
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
 	file_p, err := c.FormFile("file")
 	if err != nil {
-		resp.Msg = "not upload file request"
+		Err.Sugar().Errorf("[%v] [%v] FormFile err", c.ClientIP(), usertoken.Mailbox)
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
 	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountAddr)
 	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
+		resp.Msg = Status_500_chain
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
 	if spaceInfo.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
-		resp.Msg = "Not enough free space"
+		resp.Msg = Status_403_expired
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
-	file_c, _, _ := c.Request.FormFile("file")
-
-	fnamemd5, err := tools.CalcMD5(file_p.Filename)
+	file_c, _, err := c.Request.FormFile("file")
 	if err != nil {
-		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-	//userpath := filepath.Join(configs.FileCacheDir, "test")
-	userpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", string(fnamemd5)))
+
+	// server data
+	resp.Code = http.StatusInternalServerError
+	resp.Msg = Status_500_unexpected
+	userpath := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId))
 	_, err = os.Stat(userpath)
 	if err != nil {
 		err = os.MkdirAll(userpath, os.ModeDir)
 		if err != nil {
-			resp.Code = http.StatusInternalServerError
-			resp.Msg = err.Error()
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
@@ -83,21 +110,21 @@ func UpfileHandler(c *gin.Context) {
 	fpath := filepath.Join(userpath, file_p.Filename)
 	_, err = os.Stat(fpath)
 	if err == nil {
+		Err.Sugar().Errorf("[%v] [%v] %v:%v", c.ClientIP(), usertoken.Mailbox, Status_403_dufilename, fpath)
 		resp.Code = http.StatusForbidden
-		resp.Msg = "duplicate file name"
+		resp.Msg = Status_403_dufilename
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}
 
-	resp.Code = http.StatusInternalServerError
 	f, err := os.Create(fpath)
 	if err != nil {
-		Err.Sugar().Errorf("create file fail:%v\n", err)
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	defer f.Close()
+
 	buf := make([]byte, 2*1024*1024)
 	for {
 		n, err := file_c.Read(buf)
@@ -116,64 +143,72 @@ func UpfileHandler(c *gin.Context) {
 		f.Write(buf[:n])
 	}
 
-	hash, err := tools.CalcFileHash2(f)
+	fileid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
 	if err != nil {
-		Err.Sugar().Errorf("%v", err)
-		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		return
+	}
+	db, err := db.GetDB()
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Msg = Status_500_db
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	fkey, err := tools.CalcMD5(usertoken.Mailbox + file_p.Filename)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	err = db.Put([]byte(fkey), tools.Int64ToBytes(fileid))
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Msg = Status_500_db
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	err = db.Put(tools.Int64ToBytes(fileid), []byte(file_p.Filename))
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Msg = Status_500_db
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
-	db, err := db.GetDB()
-	ok, _ := db.Has([]byte(hash))
-	if ok {
-		os.RemoveAll(fpath)
-		resp.Code = http.StatusForbidden
-		resp.Msg = "duplicate file hash"
-		c.JSON(http.StatusForbidden, resp)
-		return
-	} else {
-		db.Put([]byte(hash), []byte(fpath))
-	}
-
 	resp.Code = http.StatusOK
-	resp.Msg = "success"
+	resp.Msg = Status_200_default
 	c.JSON(http.StatusOK, resp)
 
-	go uploadToStorage(fpath, string(fnamemd5))
+	go uploadToStorage(fpath, usertoken.Mailbox, fileid)
 
 	return
 }
 
 // Upload files to cess storage system
-func uploadToStorage(fpath, fnamemd5 string) {
+func uploadToStorage(fpath, mailbox string, fid int64) {
 	time.Sleep(time.Second)
 	defer func() {
 		err := recover()
 		if err != nil {
-			Err.Sugar().Errorf("[panic]: %v", err)
+			Err.Sugar().Errorf("[panic]: [%v] [%v] %v", mailbox, fpath, err)
 		}
 	}()
 	file, err := os.Stat(fpath)
 	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
 
 	filehash, err := tools.CalcFileHash(fpath)
 	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
-	fileid, err := tools.GetGuid(int64(tools.RandomInRange(0, 1023)))
-	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
-		return
-	}
+
 	var blockinfo rpc.FileUploadInfo
 	blockinfo.Backups = "3"
-	blockinfo.FileId = fmt.Sprintf("%v", fileid)
+	blockinfo.FileId = strconv.FormatInt(fid, 10)
 	blockinfo.BlockSize = 0
 	blockinfo.FileHash = filehash
 
@@ -182,19 +217,19 @@ func uploadToStorage(fpath, fnamemd5 string) {
 
 	f, err := os.Open(fpath)
 	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
 	defer f.Close()
 	filebytes, err := ioutil.ReadAll(f)
 	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
 
 	schds, err := chain.GetSchedulerInfo()
 	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
 
@@ -209,7 +244,7 @@ func uploadToStorage(fpath, fnamemd5 string) {
 		configs.Confile.AccountSeed,
 		configs.Confile.AccountAddr,
 		file.Name(),
-		fmt.Sprintf("%v", fileid),
+		strconv.FormatInt(fid, 10),
 		filehash,
 		false,
 		3,
@@ -217,7 +252,7 @@ func uploadToStorage(fpath, fnamemd5 string) {
 		new(big.Int).SetUint64(0),
 	)
 	if err != nil {
-		Err.Sugar().Errorf("[%v] %v", fpath, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
 
@@ -226,23 +261,16 @@ func uploadToStorage(fpath, fnamemd5 string) {
 		wsURL := "ws://" + string(base58.Decode(string(schd.Ip)))
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		client, err = rpc.DialWebsocket(ctx, wsURL, "")
-		//defer cancel()
 		if err != nil {
-			Err.Sugar().Errorf("[%v] %v", fpath, string(schds[i].Ip))
+			Err.Sugar().Errorf("[%v] [%v] [%v] %v", mailbox, fpath, wsURL, err)
 			if i == len(schds) {
-				Err.Sugar().Errorf("[%v] All scheduler not working", len(schds))
+				Err.Sugar().Errorf("[%v] [%v] All scheduler not working", mailbox, fpath)
 				return
 			}
-
 		} else {
 			break
 		}
 	}
-	// sp := sync.Pool{
-	// 	New: func() interface{} {
-	// 		return &rpc.ReqMsg{}
-	// 	},
-	// }
 	reqmsg := rpc.ReqMsg{}
 	reqmsg.Method = configs.RpcMethod_WriteFile
 	reqmsg.Service = configs.RpcService_Scheduler
@@ -253,12 +281,10 @@ func uploadToStorage(fpath, fnamemd5 string) {
 		if err != nil {
 			return errors.Wrap(err, "[Error]Serialization error, please upload again")
 		}
-		//reqmsg := sp.Get().(*rpc.ReqMsg)
 		reqmsg.Body = info
 
 		ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
 		resp, err := client.Call(ctx, &reqmsg)
-		//defer cancel()
 		if err != nil {
 			return errors.Wrap(err, "[Error]Failed to transfer file to scheduler,error")
 		}
@@ -272,7 +298,6 @@ func uploadToStorage(fpath, fnamemd5 string) {
 			err = errors.New(res.Msg)
 			return errors.Wrap(err, "[Error]Upload file fail!scheduler problem")
 		}
-		//sp.Put(reqmsg)
 		return nil
 	}
 	blocks := len(filebytes) / blocksize
@@ -297,23 +322,5 @@ func uploadToStorage(fpath, fnamemd5 string) {
 		}
 	}
 	os.Remove(fpath)
-	fmt.Printf("[Success] Storage file:%s successful", fpath)
-	Out.Sugar().Infof("[Success] Storage file:%s successful", fpath)
-	db, err := db.GetDB()
-	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
-		return
-	}
-	err = db.Put([]byte(fnamemd5), tools.Int64ToBytes(fileid))
-	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
-		return
-	}
-	err = db.Put(tools.Int64ToBytes(fileid), []byte(file.Name()))
-	if err != nil {
-		Err.Sugar().Errorf("[%v][%v] %v", fpath, fileid, err)
-		return
-	}
-	fmt.Printf("[Success] DB record a file:%s successful", fpath)
-	Out.Sugar().Infof("[Success] DB record a file:%s successful", fpath)
+	Out.Sugar().Infof("[Success] Storage file:%s", fpath)
 }

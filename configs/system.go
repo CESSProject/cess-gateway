@@ -10,7 +10,7 @@ const (
 	ChainAddr = "ws://106.15.44.155:9948/"
 
 	// base dir
-	BaseDir = "/usr/local/cess"
+	BaseDir = "/usr/local/cess-gateway"
 
 	// log file dir
 	LogfileDir = BaseDir + "/log"

@@ -20,7 +20,7 @@ func Main() {
 	r.GET("/file/download", DownfileHandler)
 	r.POST("/user/randoms", GenerateRandomkeyHandler)
 	r.POST("/user/grant", GrantTokenHandler)
-	r.POST("/user/regrant", RegrantTokenHandler)
+	//r.POST("/user/regrant", RegrantTokenHandler)
 	r.GET("/file/list", FilelistHandler)
 	r.GET("/user/state", UserStateHandler)
 	r.POST("/file/delete", DeletefileHandler)

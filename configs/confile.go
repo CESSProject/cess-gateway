@@ -1,6 +1,7 @@
 package configs
 
 import (
+	"cess-httpservice/tools"
 	"errors"
 	"os"
 
@@ -41,5 +42,15 @@ func ParseConfile() error {
 	if err != nil {
 		return err
 	}
+
+	err = tools.VerityAddress(Confile.AccountAddr, tools.SubstratePrefix)
+	if err != nil {
+		return err
+	}
+
+	if !tools.VerifyMailboxFormat(Confile.EmailAddress) {
+		return errors.New("Email format error")
+	}
+
 	return nil
 }

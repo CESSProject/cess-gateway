@@ -9,6 +9,7 @@ import (
 	"io"
 	"math/rand"
 	"os"
+	"regexp"
 	"time"
 
 	"github.com/bwmarrin/snowflake"
@@ -92,4 +93,11 @@ func BytesToInt64(bys []byte) int64 {
 	var data int64
 	binary.Read(bytebuff, binary.BigEndian, &data)
 	return data
+}
+
+var reg_mail = regexp.MustCompile(`^[0-9a-z][_,0-9a-z-]{0,31}@([0-9a-z][0-9a-z-]{0,30}[0-9a-z]\.){1,4}[a-z]{2,4}$`)
+
+//
+func VerifyMailboxFormat(mailbox string) bool {
+	return reg_mail.MatchString(mailbox)
 }

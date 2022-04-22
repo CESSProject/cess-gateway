@@ -39,7 +39,7 @@ func GrantTokenHandler(c *gin.Context) {
 	}
 
 	// Check if the email format is correct
-	if !communication.VerifyMailboxFormat(reqmsg.Mailbox) {
+	if !tools.VerifyMailboxFormat(reqmsg.Mailbox) {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
 		resp.Msg = Status_400_EmailFormat
 		c.JSON(http.StatusBadRequest, resp)

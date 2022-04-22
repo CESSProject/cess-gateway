@@ -1,12 +1,8 @@
 package communication
 
 import (
-	"regexp"
-
 	"github.com/go-gomail/gomail"
 )
-
-var reg_mail = regexp.MustCompile(`^[0-9a-z][_,0-9a-z-]{0,31}@([0-9a-z][0-9a-z-]{0,30}[0-9a-z]\.){1,4}[a-z]{2,4}$`)
 
 //
 func SendPlainMail(host string, port int, from, passwd string, to []string, subject, body string) error {
@@ -22,9 +18,4 @@ func SendPlainMail(host string, port int, from, passwd string, to []string, subj
 	m.SetBody("text/plain", body)
 
 	return gomail.NewPlainDialer(host, port, from, passwd).DialAndSend(m)
-}
-
-//
-func VerifyMailboxFormat(mailbox string) bool {
-	return reg_mail.MatchString(mailbox)
 }

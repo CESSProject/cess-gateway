@@ -38,7 +38,13 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 
-	// TODO: Check if the email format is correct
+	// Check if the email format is correct
+	if !communication.VerifyMailboxFormat(reqmsg.Mailbox) {
+		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
+		resp.Msg = Status_400_EmailFormat
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
 
 	resp.Code = http.StatusInternalServerError
 	db, err := db.GetDB()
@@ -52,22 +58,25 @@ func GrantTokenHandler(c *gin.Context) {
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
 			captcha := tools.RandomInRange(100000, 999999)
+			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(time.Minute*10).Unix())
+			err = db.Put([]byte(reqmsg.Mailbox), []byte(v))
+			if err != nil {
+				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+				resp.Msg = Status_500_db
+				c.JSON(http.StatusInternalServerError, resp)
+				return
+			}
 			// Send verification code to email
-			body := "Hello, " + reqmsg.Mailbox + "!"
-			tmp := `
-			Welcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.
-			captcha: 
-			`
-			body += tmp
+			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
 			body += fmt.Sprintf("%v", captcha)
-
+			body += "\nValidity: 5 minutes"
 			err = communication.SendPlainMail(
 				configs.Confile.EmailHost,
 				configs.Confile.EmailHostPort,
 				configs.Confile.EmailAddress,
 				configs.Confile.EmailPassword,
 				[]string{reqmsg.Mailbox},
-				configs.EmailSubject_token,
+				configs.EmailSubject_captcha,
 				body,
 			)
 			if err != nil {
@@ -124,12 +133,14 @@ func GrantTokenHandler(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
-		body := "Hello, " + reqmsg.Mailbox + "!"
-		tmp := `
-		Congratulations on your successful authentication, your token is:
-
-		`
-		body += tmp
+		err = db.Put([]byte(reqmsg.Mailbox), []byte(usertoken))
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+			resp.Msg = Status_500_db
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		body := "Hello, " + reqmsg.Mailbox + "!\nCongratulations on your successful authentication, your token is:\n"
 		body += usertoken
 		fmt.Println(body)
 		err = communication.SendPlainMail(
@@ -154,7 +165,7 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 
-	bytes, err = token.DecryptToken(string(bytes))
+	b, err := token.DecryptToken(string(bytes))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 		resp.Msg = Status_500_unexpected
@@ -162,7 +173,7 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 	var utoken token.TokenMsgType
-	err = json.Unmarshal(bytes, &utoken)
+	err = json.Unmarshal(b, &utoken)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 		resp.Msg = Status_500_unexpected

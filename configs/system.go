@@ -54,5 +54,5 @@ const (
 
 	//
 	EmailSubject_captcha = "CESS | Authorization captcha"
-	EmailSubject_token   = "CESS | authorization token"
+	EmailSubject_token   = "CESS | Authorization token"
 )

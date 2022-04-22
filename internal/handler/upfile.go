@@ -6,8 +6,10 @@ import (
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/rpc"
+	"cess-httpservice/internal/token"
 	"cess-httpservice/tools"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -25,27 +27,53 @@ import (
 
 func UpfileHandler(c *gin.Context) {
 	var resp = RespMsg{
-		Code: http.StatusBadRequest,
-		Msg:  "",
+		Code: http.StatusForbidden,
+		Msg:  Status_403_token,
+	}
+	// token
+	htoken := c.Request.Header.Get("Authorization")
+	fmt.Println(htoken)
+	if htoken == "" {
+		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
+		c.JSON(http.StatusForbidden, resp)
+		return
+	}
+	var usertoken token.TokenMsgType
+	err := json.Unmarshal([]byte(htoken), &usertoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] token format error", c.ClientIP(), htoken)
+		c.JSON(http.StatusForbidden, resp)
+		return
 	}
 
+	if time.Now().Unix() >= usertoken.ExpirationTime {
+		Err.Sugar().Errorf("[%v] [%v] token expired", c.ClientIP(), usertoken.Mailbox)
+		resp.Msg = Status_403_expired
+		c.JSON(http.StatusForbidden, resp)
+		return
+	}
+
+	// client data
+	resp.Code = http.StatusBadRequest
+	resp.Msg = Status_400_default
 	content_length := c.Request.ContentLength
 	if content_length <= 0 {
-		resp.Msg = "empty file"
+		Err.Sugar().Errorf("[%v] [%v] contentLength <= 0", c.ClientIP(), usertoken.Mailbox)
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
-
 	file_p, err := c.FormFile("file")
 	if err != nil {
-		resp.Msg = "not upload file request"
+		Err.Sugar().Errorf("[%v] [%v] FormFile err", c.ClientIP(), usertoken.Mailbox)
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
+	// server data
+	resp.Code = http.StatusInternalServerError
+	resp.Msg = Status_500_unexpected
 	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountAddr)
 	if err != nil {
-		resp.Code = http.StatusInternalServerError
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
 		return

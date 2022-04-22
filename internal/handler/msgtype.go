@@ -7,6 +7,8 @@ const (
 	Status_400_EmailFormat = "Email format error"
 	Status_400_captcha     = "captcha error"
 	Status_400_EmailSmpt   = "Please check your email address and whether to enable SMTP service"
+	Status_403_token       = "Unauthorized"
+	Status_403_expired     = "token expired"
 	Status_500_db          = "Server internal data error"
 	Status_500_unexpected  = "Server unexpected error"
 )

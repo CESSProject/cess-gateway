@@ -82,7 +82,7 @@ func GrantTokenHandler(c *gin.Context) {
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 				resp.Code = http.StatusBadRequest
-				resp.Msg = Status_400_mailbox
+				resp.Msg = Status_400_EmailSmpt
 				c.JSON(http.StatusBadRequest, resp)
 				return
 			}
@@ -106,7 +106,37 @@ func GrantTokenHandler(c *gin.Context) {
 			return
 		}
 		if time.Now().Unix() >= time.Unix(vi, 0).Unix() {
-			Out.Sugar().Infof("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+			Out.Sugar().Infof("[%v] [%v] Captcha has expired and a new captcha has been sent to your mailbox", c.ClientIP(), reqmsg)
+			captcha := tools.RandomInRange(100000, 999999)
+			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(time.Minute*10).Unix())
+			err = db.Put([]byte(reqmsg.Mailbox), []byte(v))
+			if err != nil {
+				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+				resp.Msg = Status_500_db
+				c.JSON(http.StatusInternalServerError, resp)
+				return
+			}
+			// Send verification code to email
+			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
+			body += fmt.Sprintf("%v", captcha)
+			body += "\nValidity: 5 minutes"
+			err = communication.SendPlainMail(
+				configs.Confile.EmailHost,
+				configs.Confile.EmailHostPort,
+				configs.Confile.EmailAddress,
+				configs.Confile.EmailPassword,
+				[]string{reqmsg.Mailbox},
+				configs.EmailSubject_captcha,
+				body,
+			)
+			if err != nil {
+				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+				resp.Code = http.StatusBadRequest
+				resp.Msg = Status_400_EmailSmpt
+				c.JSON(http.StatusBadRequest, resp)
+				return
+			}
+
 			resp.Code = http.StatusOK
 			resp.Msg = Status_200_expired
 			c.JSON(http.StatusOK, resp)
@@ -155,7 +185,7 @@ func GrantTokenHandler(c *gin.Context) {
 		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 			resp.Code = http.StatusBadRequest
-			resp.Msg = Status_400_mailbox
+			resp.Msg = Status_400_EmailSmpt
 			c.JSON(http.StatusBadRequest, resp)
 			return
 		}

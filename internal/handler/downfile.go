@@ -6,8 +6,10 @@ import (
 	"cess-httpservice/internal/db"
 	. "cess-httpservice/internal/logger"
 	"cess-httpservice/internal/rpc"
+	"cess-httpservice/internal/token"
 	"cess-httpservice/tools"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -23,30 +25,68 @@ import (
 
 func DownfileHandler(c *gin.Context) {
 	var resp = RespMsg{
-		Code: http.StatusBadRequest,
-		Msg:  "",
+		Code: http.StatusUnauthorized,
+		Msg:  Status_401_token,
 	}
+
+	// token
+	htoken := c.Request.Header.Get("Authorization")
+	fmt.Println(htoken)
+	if htoken == "" {
+		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	bytes, err := token.DecryptToken(htoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] DecryptToken error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	var usertoken token.TokenMsgType
+	err = json.Unmarshal(bytes, &usertoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] token format error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	if time.Now().Unix() >= usertoken.ExpirationTime {
+		Err.Sugar().Errorf("[%v] [%v] token expired", c.ClientIP(), usertoken.Mailbox)
+		resp.Msg = Status_401_expired
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
 	filename := c.Query("filename")
 	if filename == "" {
-		resp.Msg = "filename is empty"
+		Err.Sugar().Errorf("[%v] [%v] filename is empty", c.ClientIP(), usertoken.Mailbox)
+		resp.Code = http.StatusBadRequest
+		resp.Msg = Status_400_default
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
 
-	// Determine if the user has uploaded the file
-	key, err := tools.CalcMD5(filename)
+	// server
+	resp.Code = http.StatusInternalServerError
+	resp.Msg = Status_500_unexpected
+	key, err := tools.CalcMD5(usertoken.Mailbox + filename)
 	if err != nil {
-		resp.Msg = "invalid filename"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-	db, err := db.GetDB()
-	if err != nil {
-		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+
+	db, err := db.GetDB()
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Msg = Status_500_db
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
 	v, err := db.Get(key)
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
@@ -55,15 +95,15 @@ func DownfileHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, resp)
 			return
 		} else {
-			resp.Code = http.StatusInternalServerError
-			resp.Msg = err.Error()
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+			resp.Msg = Status_500_db
 			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
 	}
 
 	// local cache
-	fdir := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", string(key)))
+	fdir := filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId))
 	_, err = os.Stat(fdir)
 	if err != nil {
 		os.MkdirAll(fdir, os.ModeDir)
@@ -81,15 +121,14 @@ func DownfileHandler(c *gin.Context) {
 	// file meta info
 	filemetainfo, err := chain.GetFileMetaInfo(fid)
 	if err != nil {
-		Err.Sugar().Errorf("%v", err)
-		resp.Code = http.StatusInternalServerError
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Msg = Status_500_chain
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 	if string(filemetainfo.FileState) != "active" {
 		resp.Code = http.StatusForbidden
-		resp.Msg = "The file is in hot backup, please try again later."
+		resp.Msg = Status_403_hotbackup
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}
@@ -97,7 +136,7 @@ func DownfileHandler(c *gin.Context) {
 	// Download the file from the scheduler service
 	err = downloadFromStorage(fpath, fid)
 	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", fpath, fid, err)
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
@@ -108,6 +147,7 @@ func DownfileHandler(c *gin.Context) {
 	c.Writer.Header().Add("Content-Type", "application/octet-stream")
 	c.File(fpath)
 	defer os.Remove(fpath)
+	return
 }
 
 // Download files from cess storage service

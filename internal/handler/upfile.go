@@ -39,8 +39,16 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
+
+	bytes, err := token.DecryptToken(htoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] DecryptToken error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
 	var usertoken token.TokenMsgType
-	err := json.Unmarshal([]byte(htoken), &usertoken)
+	err = json.Unmarshal(bytes, &usertoken)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] token format error", c.ClientIP(), htoken)
 		c.JSON(http.StatusUnauthorized, resp)

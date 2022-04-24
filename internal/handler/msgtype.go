@@ -18,11 +18,12 @@ const (
 	//403
 	Status_403_expired    = "not enough space"
 	Status_403_dufilename = "duplicate filename"
+	Status_403_hotbackup  = "The file is in hot backup, please try again later."
 
 	//500
 	Status_500_db         = "Server internal data error"
 	Status_500_chain      = "Server internal chain data error"
-	Status_500_unexpected = "Server unexpected error"
+	Status_500_unexpected = "The file is in hot backup, please try again later."
 )
 
 // http response message

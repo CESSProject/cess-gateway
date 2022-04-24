@@ -271,7 +271,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		client, err = rpc.DialWebsocket(ctx, wsURL, "")
 		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] [%v] %v", mailbox, fpath, wsURL, err)
-			if i == len(schds) {
+			if (i + 1) == len(schds) {
 				Err.Sugar().Errorf("[%v] [%v] All scheduler not working", mailbox, fpath)
 				return
 			}

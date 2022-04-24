@@ -14,7 +14,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -31,7 +30,6 @@ func DownfileHandler(c *gin.Context) {
 
 	// token
 	htoken := c.Request.Header.Get("Authorization")
-	fmt.Println(htoken)
 	if htoken == "" {
 		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
 		c.JSON(http.StatusUnauthorized, resp)
@@ -109,6 +107,7 @@ func DownfileHandler(c *gin.Context) {
 		os.MkdirAll(fdir, os.ModeDir)
 	}
 	fpath := filepath.Join(fdir, filename)
+	defer os.Remove(fpath)
 	_, err = os.Stat(fpath)
 	if err == nil {
 		c.Writer.Header().Add("inline", fmt.Sprintf("inline; filename=%v", filename))
@@ -117,7 +116,6 @@ func DownfileHandler(c *gin.Context) {
 		return
 	}
 	fid := tools.BytesToInt64(v)
-
 	// file meta info
 	filemetainfo, err := chain.GetFileMetaInfo(fid)
 	if err != nil {
@@ -146,7 +144,6 @@ func DownfileHandler(c *gin.Context) {
 	c.Writer.Header().Add("inline", fmt.Sprintf("inline; filename=%v", filename))
 	c.Writer.Header().Add("Content-Type", "application/octet-stream")
 	c.File(fpath)
-	defer os.Remove(fpath)
 	return
 }
 
@@ -171,7 +168,7 @@ func downloadFromStorage(fpath string, fid int64) error {
 		defer cancel()
 		if err != nil {
 			Err.Sugar().Errorf("[%v] %v", fpath, string(schds[i].Ip))
-			if i == len(schds)-1 {
+			if (i + 1) == len(schds) {
 				return errors.New("All scheduler is offline")
 			}
 		} else {
@@ -180,28 +177,22 @@ func downloadFromStorage(fpath string, fid int64) error {
 	}
 
 	var wantfile rpc.FileDownloadReq
-	sp := sync.Pool{
-		New: func() interface{} {
-			return &rpc.ReqMsg{}
-		},
-	}
+
 	wantfile.FileId = fmt.Sprintf("%v", fid)
 	wantfile.WalletAddress = ""
 	wantfile.Blocks = 1
 
+	reqmsg := rpc.ReqMsg{}
+	reqmsg.Method = configs.RpcMethod_ReadFile
+	reqmsg.Service = configs.RpcService_Scheduler
 	for {
 		data, err := proto.Marshal(&wantfile)
 		if err != nil {
 			return err
 		}
-		req := sp.Get().(*rpc.ReqMsg)
-		req.Method = configs.RpcMethod_ReadFile
-		req.Service = configs.RpcService_Scheduler
-		req.Body = data
-
-		ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
-		defer cancel()
-		resp, err := client.Call(ctx, req)
+		reqmsg.Body = data
+		ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
+		resp, err := client.Call(ctx, &reqmsg)
 		if err != nil {
 			return err
 		}
@@ -226,7 +217,6 @@ func downloadFromStorage(fpath string, fid int64) error {
 			break
 		}
 		wantfile.Blocks++
-		sp.Put(req)
 	}
 	return nil
 }

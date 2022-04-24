@@ -234,10 +234,24 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 	resp.Code = http.StatusOK
-	resp.Msg = Status_200_default
+	resp.Msg = Status_200_RefreshToken
 	resp.Data = "token=" + newtoken
 	c.JSON(http.StatusOK, resp)
-	return
+
+	bodys := "Hello, " + reqmsg.Mailbox + "!\nYour new token is as follows:\n"
+	bodys += newtoken
+	err = communication.SendPlainMail(
+		configs.Confile.EmailHost,
+		configs.Confile.EmailHostPort,
+		configs.Confile.EmailAddress,
+		configs.Confile.EmailPassword,
+		[]string{reqmsg.Mailbox},
+		configs.EmailSubject_token,
+		bodys,
+	)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+	}
 }
 
 // func RegrantTokenHandler(c *gin.Context) {

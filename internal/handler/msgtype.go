@@ -2,28 +2,29 @@ package handler
 
 const (
 	//200
-	Status_200_default = "success"
-	Status_200_expired = "captcha has expired and a new captcha has been sent to your mailbox"
-
+	Status_200_default      = "success"
+	Status_200_expired      = "captcha has expired and a new captcha has been sent to your mailbox"
+	Status_200_RefreshToken = "A new token has been sent to your mailbox"
 	//400
 	Status_400_default     = "HTTP error"
 	Status_400_EmailFormat = "Email format error"
 	Status_400_captcha     = "captcha error"
 	Status_400_EmailSmpt   = "Please check your email address and whether to enable SMTP service"
+	Status_400_NotUploaded = "This file has not been uploaded"
 
 	//401
 	Status_401_token   = "Unauthorized"
 	Status_401_expired = "token expired"
 
 	//403
-	Status_403_expired    = "not enough space"
-	Status_403_dufilename = "duplicate filename"
-	Status_403_hotbackup  = "The file is in hot backup, please try again later."
+	Status_403_NotEnoughSpace = "not enough space"
+	Status_403_dufilename     = "duplicate filename"
+	Status_403_hotbackup      = "The file is in hot backup, please try again later."
 
 	//500
 	Status_500_db         = "Server internal data error"
 	Status_500_chain      = "Server internal chain data error"
-	Status_500_unexpected = "The file is in hot backup, please try again later."
+	Status_500_unexpected = "Server unexpected error"
 )
 
 // http response message

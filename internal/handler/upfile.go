@@ -89,7 +89,7 @@ func UpfileHandler(c *gin.Context) {
 
 	if spaceInfo.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
-		resp.Msg = Status_403_expired
+		resp.Msg = Status_403_NotEnoughSpace
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}

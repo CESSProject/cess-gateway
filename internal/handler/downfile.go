@@ -88,9 +88,9 @@ func DownfileHandler(c *gin.Context) {
 	v, err := db.Get(key)
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
-			resp.Code = http.StatusNotFound
-			resp.Msg = "This file has not been uploaded"
-			c.JSON(http.StatusNotFound, resp)
+			resp.Code = http.StatusBadRequest
+			resp.Msg = Status_400_NotUploaded
+			c.JSON(http.StatusBadRequest, resp)
 			return
 		} else {
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)

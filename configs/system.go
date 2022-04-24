@@ -25,6 +25,9 @@ const (
 	// file cache dir
 	FileCacheDir = BaseDir + "/cache"
 
+	// file records dir
+	FilRecordsDir = "records"
+
 	// http service port
 	ServicePort = "8081"
 

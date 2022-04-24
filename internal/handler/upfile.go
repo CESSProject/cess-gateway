@@ -39,8 +39,16 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
+
+	bytes, err := token.DecryptToken(htoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] DecryptToken error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
 	var usertoken token.TokenMsgType
-	err := json.Unmarshal([]byte(htoken), &usertoken)
+	err = json.Unmarshal(bytes, &usertoken)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] token format error", c.ClientIP(), htoken)
 		c.JSON(http.StatusUnauthorized, resp)
@@ -263,7 +271,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		client, err = rpc.DialWebsocket(ctx, wsURL, "")
 		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] [%v] %v", mailbox, fpath, wsURL, err)
-			if i == len(schds) {
+			if (i + 1) == len(schds) {
 				Err.Sugar().Errorf("[%v] [%v] All scheduler not working", mailbox, fpath)
 				return
 			}

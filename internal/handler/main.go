@@ -11,17 +11,15 @@ func Main() {
 	r := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
-	config.AllowMethods = []string{"GET", "POST", "PUT", "OPTIONS"}
+	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
 	config.AllowHeaders = []string{"tus-resumable", "upload-length", "upload-metadata", "cache-control", "x-requested-with", "*"}
 	r.Use(cors.New(config))
 
 	//
 	r.PUT("/:filename", UpfileHandler)
 	r.GET("/:filename", DownfileHandler)
-	r.POST("/user/grant", GrantTokenHandler)
-	r.GET("/file/list", FilelistHandler)
-	r.GET("/user/state", UserStateHandler)
-	r.POST("/file/delete", DeletefileHandler)
-	r.GET("/space/price", QueryPriceHandler)
+	r.POST("/auth", GrantTokenHandler)
+	r.GET("/files", FilelistHandler)
+	r.DELETE("/:filename", DeletefileHandler)
 	r.Run(":" + configs.Confile.ServicePort)
 }

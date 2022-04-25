@@ -92,9 +92,6 @@ func DeletefileHandler(c *gin.Context) {
 	err = chain.DeleteFileOnChain(configs.Confile.AccountSeed, configs.Confile.AccountAddr, fmt.Sprintf("%v", tools.BytesToInt64(fid)))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
-		resp.Msg = Status_500_chain
-		c.JSON(http.StatusInternalServerError, resp)
-		return
 	}
 	db.Delete(key)
 	db.Delete(fid)

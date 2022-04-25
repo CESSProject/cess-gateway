@@ -1,96 +1,189 @@
-# <h1 align="center">CESS-HTTPSERVICE &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.16-blue.svg" /></a></h1>
+# <h1 align="center">CESS-GATEWAY &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.16-blue.svg" /></a></h1>
 
-cess-httpservice is a service using RESTful API specification for accessing cess cloud storage.
+cess-gateway is a service using REST API specification for accessing cess cloud storage.
 
 ## Reporting a Vulnerability
 
-If you find any bugs or good suggestions, Please send an email to tech@cess.one.
-we are happy to communicate with you
+If you find any bugs or good suggestions, Please send an email to frode@cess.one,
+we are happy to communicate with you.
 
 ## Service address
 
-* The address of cess-httpservice is http://106.15.44.155:8081/, which has been replaced by `IP` below.
 * The block explorer address is http://139.224.19.104:3000/?rpc=ws%3A%2F%2F106.15.44.155%3A9948%2F#/accounts
 * The address for free access to tCESS tokens on the testnet is http://47.243.82.77:9708/transfer
 
-## Usage for httpservice
+## Register a wallet
 
-**Before using, you should refer to the following process to get the token**
+**Before using, you should refer to the following process to get the token and space**
 
 * First apply for a wallet account in the block explorer, and then buy CESS coins. If it is a test network, you can get it for free.
 ![createAccount](https://github.com/CESSProject/W3F-illustration/blob/main/httpservice/createAccount.PNG)
 
-* Obtain random numbers (2) from the `IP/user/randoms` interface of httpservice through tools such as postman or curl,If everything works fine, you will get something like the following:
-```
-# curl IP/user/randoms -X POST -d '{"walletaddr": "your wallet address"}' --header "Content-Type: application/json"
-{"code":200,"msg":"success","random1":116184,"random2":468019}
-```
-
-* Operate the user authentication interface in the block explorer, enter the deposit amount and the first random number, then click Submit transaction, and write down the block number of the transaction.
-![userAuth](https://github.com/CESSProject/W3F-illustration/blob/main/httpservice/userAuth.PNG)
-
 * Operate the purchase space interface in the block explorer to purchase space
 ![purchaseSpace](https://github.com/CESSProject/W3F-illustration/blob/main/httpservice/purchaseSpace.PNG)
 
-* Operate the `IP/user/grant` interface of httpservice, and tell httpservice the block number and the second random number. If all data verification is successful, httpservice will return the user token information (as shown in the data field below), you need to save the token.
+## CESS-Gateway API
 
-```
-# curl IP/user/grant -X POST -d '{"blocknumber": your blocknumber, "walletaddr": "your wallet address", "random2": 468019}'  --header "Content-Type: application/json"
-{"code":200,"msg":"success","data":"d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw=="}
-```
+The public API endpoint URL of CESS-Gateway is the server you deploy, All endpoints described in this document should be made relative to this root URL.
 
-**upload file**
-```
-# curl http://localhost:8081/file/upload -X POST --progress-bar  --form file=@test.txt --form token=d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw== --header "Content-Type: multipart/form-data" | tee /dev/null
-############################################################################################# 100.0%
-{"code":200,"msg":"success"}
-```
-**download file**
-```
-# curl -X GET -o goo.mod -# -G --data-urlencode "token= d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw==" --data-urlencode "filename=goo.mod" http://localhost:8081/file/download
-################################################################################################## 100.0%
-```
-**View file list**
-```
-# curl -X GET -G --data-urlencode "token= d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw==" http://localhost:8081/file/list
-{"code":200,"msg":"success","data":["test.log","test1.log"]}
-```
-**View user status**
-```
-# curl -X GET -G --data-urlencode "token= d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw==" http://localhost:8081/user/state
-{
-"code":200,
-"msg":"success",
-"data":{
-"userId":1514176822592405504,
-"deposit":100,
-"totalSpace":10485760,
-"usedSpace":714726,
-"freeSpace":9771034,
-"walletaddr":"5EWxDh3Gk5QKZBosoRCSmihagjKS5LVUm31CejeXxxLkdV1y"
-}
-}
-```
-**Delete File**
-```
-# curl http://localhost:8081/file/delete -X POST -d '{"token":" d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw==", "filename": "test1.log"}'  --header "Content-Type: application/json"
-{"code":200,"msg":"success"}
-```
-**View real-time pricing for space**
-```
-# curl -X GET http://localhost:8081/space/price
-{"code":200,"msg":"success","data":0}
-```
+# Authentication
 
-**regrant**
-```
-# curl http://localhost:8081/user/regrant -X POST --form token= d6sZ2pXKcawXVMko8/JEaZoojuT9Wu7IElcdH9ayoV3neW/AkwGgSd7SZzwTt+Ll+K44DMCH1gOWbOZWu8UjeX0oWq0HoQxfPKguSNa6KMkBzMBYjEnDLZvCwUF7+KzN67zKhE2R9wn6OYsYRrv+KyAsVOGIkJxaP36tZwPAsg67ZsyTIU+O+fO4UXti9cwoWX27tBslbAWMiDyNDtGWKF1ggTueR4GoNSisQmL/jFBz2UhwpD4AH/KWLUaoi8BV+h5OoXbTM/0hRsC+g09z5293Qo+guEKi4fliwQG+0AG9mGQtefilnNkCXXYeuhkhk1NYIbqAVrAmcQt/OCE7kw== --header "Content-Type: multipart/form-data"
-{
-"code":200,
-"msg":"success",
-"data":"pgPsILT9+YrdccJbOs9XInWHf21cO/E9JdpvW5Xmh79s3YBeKBBFoHWUt10CDspjc2EK5QvQWkk+nQPGVzBY5CWzEI3stsKYDI9YsmnxkFshvAgU8S1bzwjeAJowTQEJalIORgzoTQ3442gj5aXYzdTy10o5iBDru4kWFAg0LS/ajJ43Pc7lo2N9fxiKZ80vrfrQT3mg08Wtn3H2GNzczP9JMgEasjwOW7JgO5K71GkCe/E6ub9YqoQOMXz0XnfqOgrxv3fBha+A66NT3DDxi5fp3kqnIGlkV81hOxlmMolFJ2H/ZTGoFBwFZyKt+UtI6zHXijF1F7+/TwyyUnnAOA=="
-}
-```
+The CESS-Gateway API uses bearer tokens to authenticate requests. 
+
+Your tokens carry many privileges, so be sure to keep them secure! Do not share your *secret tokens* in publicly accessible locations such as a GitHub repository, client-side code, and so forth.
+
+The bearer token is a cryptic string, usually generated by the server in response to a login request. The client must send this token in the `Authorization` header when making requests to protected resources:
+
+| Authorization:<token> |
+| --------------------- |
+
+## token information
+
+| field           | description                              |
+| :-------------- | ---------------------------------------- |
+| UserId          | User ID                                  |
+| CreateUserTime  | The unix time when the user was created  |
+| CreateTokenTime | The unix time when the token was created |
+| ExpirationTime  | The unix time when token expires         |
+| Mailbox         | User's email address                     |
+| RandomCode      | Random code                              |
+
+## token generation
+
+The token is generated by the CESS-Gateway service. Each CESS-Gateway service has its own pair of public and private keys. The public key is used to encrypt the token information, and then base64 is used to encode the ciphertext to obtain the final token.
+
+# CESS-Gateway HTTP API
+
+## User authorization
+
+| **POST** /user/grant |
+| -------------------- |
+
+The authorization interface is used to generate user tokens.
+
+The user uploads his own email address and a captcha (the captcha should be written as 0 when uploading for the first time). If the email address is not authorized, CESS-Gateway will send a captcha to the mailbox. After the user gets the captcha in the mailbox, upload it again. CESS-Gateway generates a token for it and sends it to the mailbox，the validity of the token is 30 days.
+
+If the mailbox uploaded by the user has been authorized, CESS-Gateway will check whether its token has expired. If it expires, CESS-Gateway will generate a new token and send it to its mailbox.
+
+**Request Header**
+
+| field        | value            |
+| ------------ | ---------------- |
+| Content-Type | application/json |
+
+**Request Body**
+
+| field   | value                         |
+| ------- | ----------------------------- |
+| mailbox | <your mailbox address>        |
+| captcha | <captcha received by mailbox> |
+
+**Responses**
+
+Response Schema: `application/json`
+
+| status code               | structure                                 | description                                                  |
+| ------------------------- | ----------------------------------------- | ------------------------------------------------------------ |
+| 200 OK                    | code:200<br />msg:string<br />data:string | `msg` Enum:["success"，"captcha has expired and a new captcha has been sent to your mailbox"，"A new token has been sent to your mailbox"]<br />`data` Enum:[""，"<token>"] |
+| 400 Bad Request           | code:400<br />msg:string                  | `msg` Enum:["HTTP error"，"Email format error"，"captcha error"，"Please check your email address and whether to enable SMTP service"] |
+| 500 Internal Server Error | code:500<br />msg:string                  | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
+
+## Upload a file
+
+| **POST** /file/upload |
+| --------------------- |
+
+The file upload interface is used to receive the user's form file and store it in the CESS storage system.
+
+You need to submit the file as form data and use the 'file' field.
+
+**Request Header**
+
+| field         | value               |
+| ------------- | ------------------- |
+| Content-Type  | multipart/form-data |
+| Authorization | <token>             |
+
+**Request Body**
+
+| field | value        |
+| ----- | ------------ |
+| file  | file<binary> |
+
+**Responses**
+
+Response Schema: `application/json`
+
+| status code               | structure                | description                                                  |
+| ------------------------- | ------------------------ | ------------------------------------------------------------ |
+| 200 OK                    | code:200<br />msg:string | `msg` Default:"success                                       |
+| 400 Bad Request           | code:400<br />msg:string | `msg` Default:"HTTP error"                                   |
+| 401 Unauthorized          | code:401<br />msg:string | `msg` Enum:["Unauthorized"，"token expired"]                 |
+| 403 Forbidden             | code:403<br />msg:string | `msg` Enum: ["duplicate filename"，"not enough space"，"The file is in hot backup, please try again later."] |
+| 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server internal chain data error"，"Server unexpected error"] |
+
+## Download a file
+
+| **GET** /file/download |
+| ---------------------- |
+
+The file download interface is used to download files in the CESS storage system. Currently, only files uploaded by yourself are supported.
+
+**Request Header**
+
+| field         | value   |
+| ------------- | ------- |
+| Authorization | <token> |
+
+**Query Parameters**
+
+| field    | description                                                |
+| -------- | ---------------------------------------------------------- |
+| filename | type:string<br />Specify the name of the file to download. |
+
+**Responses**
+
+The response schema for the normal return status is: `application/octet-stream`
+
+The response schema for the exception return status is: `application/json`, The message returned by the exception is as follows:
+
+| status code               | structure                | description                                                  |
+| ------------------------- | ------------------------ | ------------------------------------------------------------ |
+| 400 Bad Request           | code:400<br />msg:string | `msg` Enum:["HTTP error"，"This file has not been uploaded"] |
+| 401 Unauthorized          | code:401<br />msg:string | `msg` Enum:["Unauthorized"，"token expired"]                 |
+| 403 Forbidden             | code:403<br />msg:string | `msg` Enum: ["Token is not valid","Token expired"]           |
+| 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server internal chain data error"，"Server unexpected error"] |
+
+## List previous uploads
+
+| **GET** /file/list |
+| ------------------ |
+
+List the previously uploaded files, and display the 30 files closest to the current time by default. It also supports searching by page.
+
+**Request Header**
+
+| field         | value   |
+| ------------- | ------- |
+| Authorization | <token> |
+
+**Query Parameters**
+
+| field | description                                                  |
+| ----- | ------------------------------------------------------------ |
+| size  | type:<int32><br />default:30<br />Specifies the maximum number of uploads to return，up to 1000. |
+| page  | type:<int32><br />default:0<br />Specifies the number of uploads on which page to return. |
+
+**Responses**
+
+Response Schema: `application/json`
+
+| status code               | structure                                   | description                                                  |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| 200 OK                    | code:200<br />msg:string<br />data:[]string | `msg` Default:"success"<br />`data`:<file name list>         |
+| 400 Bad Request           | code:400<br />msg:string                    | `msg` Default: "HTTP error"                                  |
+| 401 Unauthorized          | code:401<br />msg:string                    | `msg` Enum:["Unauthorized"，"token expired"]                 |
+| 500 Internal Server Error | code:500<br />msg:string                    | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
 
 ## License
-Licensed under [Apache 2.0](https://github.com/CESSProject/cess-httpservice/blob/main/LICENSE)
+Licensed under [Apache 2.0](https://github.com/CESSProject/cess-gateway/blob/main/LICENSE)

@@ -1,8 +1,8 @@
 package chain
 
 import (
-	. "cess-httpservice/internal/logger"
-	"cess-httpservice/tools"
+	. "cess-gateway/internal/logger"
+	"cess-gateway/tools"
 	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"

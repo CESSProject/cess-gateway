@@ -1,9 +1,9 @@
 package chain
 
 import (
-	"cess-httpservice/configs"
-	. "cess-httpservice/internal/logger"
-	"cess-httpservice/tools"
+	"cess-gateway/configs"
+	. "cess-gateway/internal/logger"
+	"cess-gateway/tools"
 	"math/big"
 	"time"
 

@@ -1,7 +1,7 @@
 package encryption
 
 import (
-	"cess-httpservice/configs"
+	"cess-gateway/configs"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"

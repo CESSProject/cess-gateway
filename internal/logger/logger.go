@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"cess-httpservice/configs"
+	"cess-gateway/configs"
 	"fmt"
 	"os"
 	"time"

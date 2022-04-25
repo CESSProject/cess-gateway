@@ -1,12 +1,12 @@
 package handler
 
 import (
-	"cess-httpservice/configs"
-	"cess-httpservice/internal/communication"
-	"cess-httpservice/internal/db"
-	. "cess-httpservice/internal/logger"
-	"cess-httpservice/internal/token"
-	"cess-httpservice/tools"
+	"cess-gateway/configs"
+	"cess-gateway/internal/communication"
+	"cess-gateway/internal/db"
+	. "cess-gateway/internal/logger"
+	"cess-gateway/internal/token"
+	"cess-gateway/tools"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"

@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"cess-httpservice/configs"
-	"cess-httpservice/internal/db"
-	. "cess-httpservice/internal/logger"
-	"cess-httpservice/tools"
+	"cess-gateway/configs"
+	"cess-gateway/internal/db"
+	. "cess-gateway/internal/logger"
+	"cess-gateway/tools"
 	"fmt"
 	"strconv"
 	"strings"

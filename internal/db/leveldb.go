@@ -1,7 +1,7 @@
 package db
 
 import (
-	"cess-httpservice/configs"
+	"cess-gateway/configs"
 	"os"
 
 	"github.com/syndtr/goleveldb/leveldb"

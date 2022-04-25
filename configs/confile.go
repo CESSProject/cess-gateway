@@ -1,7 +1,7 @@
 package configs
 
 import (
-	"cess-httpservice/tools"
+	"cess-gateway/tools"
 	"errors"
 	"os"
 

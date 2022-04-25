@@ -2,10 +2,10 @@ package handler
 
 import (
 	"bufio"
-	"cess-httpservice/configs"
-	. "cess-httpservice/internal/logger"
-	"cess-httpservice/internal/token"
-	"cess-httpservice/tools"
+	"cess-gateway/configs"
+	. "cess-gateway/internal/logger"
+	"cess-gateway/internal/token"
+	"cess-gateway/tools"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -164,6 +164,7 @@ func FilelistHandler(c *gin.Context) {
 		return
 	} else {
 		strartIndex = page * 30
+		strartIndex = strartIndex
 	}
 
 	// strartIndex :=

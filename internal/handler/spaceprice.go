@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"cess-httpservice/internal/chain"
+	"cess-gateway/internal/chain"
 	"fmt"
 	"net/http"
 

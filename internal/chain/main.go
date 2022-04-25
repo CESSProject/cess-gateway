@@ -1,8 +1,8 @@
 package chain
 
 import (
-	"cess-httpservice/configs"
-	. "cess-httpservice/internal/logger"
+	"cess-gateway/configs"
+	. "cess-gateway/internal/logger"
 	"fmt"
 	"os"
 	"sync"

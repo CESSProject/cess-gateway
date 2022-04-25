@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"cess-httpservice/configs"
+	"cess-gateway/configs"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"

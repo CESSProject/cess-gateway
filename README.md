@@ -86,6 +86,11 @@ Response Schema: `application/json`
 | 400 Bad Request           | code:400<br />msg:string                  | `msg` Enum:["HTTP error"，"Email format error"，"captcha error"，"Please check your email address and whether to enable SMTP service"] |
 | 500 Internal Server Error | code:500<br />msg:string                  | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
 
+**Request example**
+```
+curl "url"/auth -X POST -d '{"mailbox": "", "captcha": 0}' -H "Content-Type: application/json"
+```
+
 ## Put a file
 
 | **PUT** /"file name" |
@@ -119,6 +124,11 @@ Response Schema: `application/json`
 | 403 Forbidden             | code:403<br />msg:string | `msg` Enum: ["duplicate filename"，"not enough space"，"The file is in hot backup, please try again later."] |
 | 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server internal chain data error"，"Server unexpected error"] |
 
+**Request example**
+```
+curl -X PUT "url"/test.log -F 'file=@test.log' -H "Authorization: "token""
+```
+
 ## Get a file
 
 | **GET** /"file name" |
@@ -145,6 +155,11 @@ The response schema for the exception return status is: `application/json`, The 
 | 403 Forbidden             | code:403<br />msg:string | `msg` Enum: ["Token is not valid","Token expired"]           |
 | 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server internal chain data error"，"Server unexpected error"] |
 
+**Request example**
+```
+curl -X GET "url"/test.log -H "Authorization: "token""
+```
+
 ## Delete a file
 
 The delete file interface is used to delete a put file.
@@ -169,6 +184,11 @@ Response Schema: `application/json`
 | 401 Unauthorized          | code:401<br />msg:string | `msg` Enum:["Unauthorized"，"token expired"]                 |
 | 404 Not Found             | code:404<br />msg:string | `msg`Default: "This file has not been uploaded"              |
 | 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
+
+**Request example**
+```
+curl -X DELETE "url"/test.log -H "Authorization: "token""
+```
 
 ## List previous puts
 
@@ -201,5 +221,10 @@ Response Schema: `application/json`
 | 401 Unauthorized          | code:401<br />msg:string                    | `msg` Enum:["Unauthorized"，"token expired"]                 |
 | 500 Internal Server Error | code:500<br />msg:string                    | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
 
+**Request example**
+```
+curl -X GET "url"/files -H "Authorization: "token""
+```
+  
 ## License
 Licensed under [Apache 2.0](https://github.com/CESSProject/cess-gateway/blob/main/LICENSE)

@@ -54,8 +54,8 @@ The public API endpoint URL of CESS-Gateway is the server you deploy, All endpoi
 
 ## User authorization
 
-| **POST** /user/grant |
-| -------------------- |
+| **POST** /auth |
+| -------------- |
 
 The authorization interface is used to generate user tokens.
 
@@ -88,8 +88,8 @@ Response Schema: `application/json`
 
 ## Upload a file
 
-| **POST** /file/upload |
-| --------------------- |
+| **PUT** /"file name" |
+| -------------------- |
 
 The file upload interface is used to receive the user's form file and store it in the CESS storage system.
 
@@ -97,10 +97,9 @@ You need to submit the file as form data and use the 'file' field.
 
 **Request Header**
 
-| field         | value               |
-| ------------- | ------------------- |
-| Content-Type  | multipart/form-data |
-| Authorization | "token"             |
+| field         | value   |
+| ------------- | ------- |
+| Authorization | "token" |
 
 **Request Body**
 
@@ -122,8 +121,8 @@ Response Schema: `application/json`
 
 ## Download a file
 
-| **GET** /file/download |
-| ---------------------- |
+| **GET** /"file name" |
+| -------------------- |
 
 The file download interface is used to download files in the CESS storage system. Currently, only files uploaded by yourself are supported.
 
@@ -152,10 +151,35 @@ The response schema for the exception return status is: `application/json`, The 
 | 403 Forbidden             | code:403<br />msg:string | `msg` Enum: ["Token is not valid","Token expired"]           |
 | 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server internal chain data error"，"Server unexpected error"] |
 
+## Delete a file
+
+The delete file interface is used to delete an uploaded file.
+
+| **DELETE** /"file name" |
+| ----------------------- |
+
+**Request Header**
+
+| field         | value   |
+| ------------- | ------- |
+| Authorization | "token" |
+
+**Responses**
+
+Response Schema: `application/json`
+
+| status code               | structure                | description                                                  |
+| ------------------------- | ------------------------ | ------------------------------------------------------------ |
+| 200 OK                    | code:200<br />msg:string | `msg` Default: "success"                                     |
+| 400 Bad Request           | code:400<br />msg:string | `msg` Default: "HTTP error"                                  |
+| 401 Unauthorized          | code:401<br />msg:string | `msg` Enum:["Unauthorized"，"token expired"]                 |
+| 404 Not Found             | code:404<br />msg:string | `msg`Default: "This file has not been uploaded"              |
+| 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
+
 ## List previous uploads
 
-| **GET** /file/list |
-| ------------------ |
+| **GET** /files |
+| -------------- |
 
 List the previously uploaded files, and display the 30 files closest to the current time by default. It also supports searching by page.
 

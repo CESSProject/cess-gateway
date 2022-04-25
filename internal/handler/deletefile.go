@@ -5,48 +5,72 @@ import (
 	"cess-gateway/internal/chain"
 	"cess-gateway/internal/db"
 	. "cess-gateway/internal/logger"
+	"cess-gateway/internal/token"
 	"cess-gateway/tools"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
 
 func DeletefileHandler(c *gin.Context) {
 	var resp = RespMsg{
-		Code: http.StatusBadRequest,
-		Msg:  "",
+		Code: http.StatusUnauthorized,
+		Msg:  Status_401_token,
 	}
-
-	body, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "bad request"
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
-	var reqmsg ReqDeleteFileMsg
-	err = json.Unmarshal(body, &reqmsg)
-	if err != nil {
-		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
-		resp.Msg = "body format error"
-		c.JSON(http.StatusBadRequest, resp)
+	// token
+	htoken := c.Request.Header.Get("Authorization")
+	if htoken == "" {
+		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
+		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
 
-	// Determine if the user has uploaded the file
-	key, err := tools.CalcMD5(reqmsg.Filename)
+	bytes, err := token.DecryptToken(htoken)
 	if err != nil {
-		resp.Msg = "invalid filename"
+		Err.Sugar().Errorf("[%v] [%v] DecryptToken error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	var usertoken token.TokenMsgType
+	err = json.Unmarshal(bytes, &usertoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] token format error", c.ClientIP(), htoken)
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	if time.Now().Unix() >= usertoken.ExpirationTime {
+		Err.Sugar().Errorf("[%v] [%v] token expired", c.ClientIP(), usertoken.Mailbox)
+		resp.Msg = Status_401_expired
+		c.JSON(http.StatusUnauthorized, resp)
+		return
+	}
+
+	resp.Code = http.StatusBadRequest
+	resp.Msg = Status_400_default
+	filename := c.Param("filename")
+	if filename == "" {
+		Err.Sugar().Errorf("[%v] [%v] no file name", c.ClientIP(), htoken)
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
+
+	key, err := tools.CalcMD5(usertoken.Mailbox + filename)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
+
 	resp.Code = http.StatusInternalServerError
+	resp.Msg = Status_500_db
 	db, err := db.GetDB()
 	if err != nil {
-		resp.Msg = err.Error()
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
@@ -58,7 +82,7 @@ func DeletefileHandler(c *gin.Context) {
 			c.JSON(http.StatusNotFound, resp)
 			return
 		} else {
-			resp.Msg = err.Error()
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
@@ -67,11 +91,10 @@ func DeletefileHandler(c *gin.Context) {
 	//Delete files in cess storage service
 	err = chain.DeleteFileOnChain(configs.Confile.AccountSeed, configs.Confile.AccountAddr, fmt.Sprintf("%v", tools.BytesToInt64(fid)))
 	if err != nil {
-		resp.Msg = err.Error()
-		c.JSON(http.StatusInternalServerError, resp)
-		return
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 	}
 	db.Delete(key)
+	db.Delete(fid)
 	resp.Code = http.StatusOK
 	resp.Msg = "success"
 	c.JSON(http.StatusOK, resp)

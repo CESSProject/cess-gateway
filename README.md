@@ -86,12 +86,12 @@ Response Schema: `application/json`
 | 400 Bad Request           | code:400<br />msg:string                  | `msg` Enum:["HTTP error"，"Email format error"，"captcha error"，"Please check your email address and whether to enable SMTP service"] |
 | 500 Internal Server Error | code:500<br />msg:string                  | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
 
-## Upload a file
+## Put a file
 
 | **PUT** /"file name" |
 | -------------------- |
 
-The file upload interface is used to receive the user's form file and store it in the CESS storage system.
+The put file interface is used to allow users to store files in the cess system.
 
 You need to submit the file as form data and use the 'file' field.
 
@@ -119,24 +119,18 @@ Response Schema: `application/json`
 | 403 Forbidden             | code:403<br />msg:string | `msg` Enum: ["duplicate filename"，"not enough space"，"The file is in hot backup, please try again later."] |
 | 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server internal chain data error"，"Server unexpected error"] |
 
-## Download a file
+## Get a file
 
 | **GET** /"file name" |
 | -------------------- |
 
-The file download interface is used to download files in the CESS storage system. Currently, only files uploaded by yourself are supported.
+The get file interface is used to get files in the CESS storage system. Currently, only files put by yourself are supported.
 
 **Request Header**
 
 | field         | value   |
 | ------------- | ------- |
 | Authorization | "token" |
-
-**Query Parameters**
-
-| field    | description                                                |
-| -------- | ---------------------------------------------------------- |
-| filename | type:string<br />Specify the name of the file to download. |
 
 **Responses**
 
@@ -153,7 +147,7 @@ The response schema for the exception return status is: `application/json`, The 
 
 ## Delete a file
 
-The delete file interface is used to delete an uploaded file.
+The delete file interface is used to delete a put file.
 
 | **DELETE** /"file name" |
 | ----------------------- |
@@ -176,12 +170,12 @@ Response Schema: `application/json`
 | 404 Not Found             | code:404<br />msg:string | `msg`Default: "This file has not been uploaded"              |
 | 500 Internal Server Error | code:500<br />msg:string | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
 
-## List previous uploads
+## List previous puts
 
 | **GET** /files |
 | -------------- |
 
-List the previously uploaded files, and display the 30 files closest to the current time by default. It also supports searching by page.
+List the previously put files, and display the 30 files closest to the current time by default. It also supports searching by page.
 
 **Request Header**
 
@@ -194,7 +188,7 @@ List the previously uploaded files, and display the 30 files closest to the curr
 | field | description                                                  |
 | ----- | ------------------------------------------------------------ |
 | size  | type:<int32><br />default:30<br />Specifies the maximum number of uploads to return，up to 1000. |
-| page  | type:<int32><br />default:0<br />Specifies the number of uploads on which page to return. |
+| page  | type:<int32><br />default:0<br />Specifies the number of puts on which page to return. |
 
 **Responses**
 

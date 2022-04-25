@@ -1,4 +1,4 @@
-module cess-httpservice
+module cess-gateway
 
 go 1.16
 

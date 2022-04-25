@@ -1,9 +1,9 @@
 package token
 
 import (
-	"cess-httpservice/configs"
-	"cess-httpservice/internal/encryption"
-	"cess-httpservice/tools"
+	"cess-gateway/configs"
+	"cess-gateway/internal/encryption"
+	"cess-gateway/tools"
 	"encoding/json"
 	"time"
 

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"cess-httpservice/configs"
-	"cess-httpservice/internal/handler"
+	"cess-gateway/configs"
+	"cess-gateway/internal/handler"
 
 	"fmt"
 	"os"

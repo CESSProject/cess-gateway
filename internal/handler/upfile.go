@@ -33,7 +33,6 @@ func UpfileHandler(c *gin.Context) {
 	}
 	// token
 	htoken := c.Request.Header.Get("Authorization")
-	fmt.Println(htoken)
 	if htoken == "" {
 		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
 		c.JSON(http.StatusUnauthorized, resp)
@@ -61,10 +60,14 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
-
-	// client data
 	resp.Code = http.StatusBadRequest
 	resp.Msg = Status_400_default
+	filename := c.Param("filename")
+	if filename == "" {
+		Err.Sugar().Errorf("[%v] [%v] no file name", c.ClientIP(), htoken)
+		c.JSON(http.StatusBadRequest, resp)
+		return
+	}
 	content_length := c.Request.ContentLength
 	if content_length <= 0 {
 		Err.Sugar().Errorf("[%v] [%v] contentLength <= 0", c.ClientIP(), usertoken.Mailbox)
@@ -121,7 +124,7 @@ func UpfileHandler(c *gin.Context) {
 		}
 	}
 
-	fpath := filepath.Join(userpath, file_p.Filename)
+	fpath := filepath.Join(userpath, filename)
 	_, err = os.Stat(fpath)
 	if err == nil {
 		Err.Sugar().Errorf("[%v] [%v] %v:%v", c.ClientIP(), usertoken.Mailbox, Status_403_dufilename, fpath)
@@ -169,7 +172,7 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	fkey, err := tools.CalcMD5(usertoken.Mailbox + file_p.Filename)
+	fkey, err := tools.CalcMD5(usertoken.Mailbox + filename)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		c.JSON(http.StatusInternalServerError, resp)
@@ -182,7 +185,7 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	err = db.Put(tools.Int64ToBytes(fileid), []byte(file_p.Filename))
+	err = db.Put(tools.Int64ToBytes(fileid), []byte(filename))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		resp.Msg = Status_500_db
@@ -207,7 +210,7 @@ func UpfileHandler(c *gin.Context) {
 			return
 		}
 		defer f.Close()
-		f.WriteString(base58.Encode([]byte(file_p.Filename)))
+		f.WriteString(base58.Encode([]byte(filename)))
 		f.WriteString("\n")
 	} else {
 		for k, v := range fs {
@@ -233,7 +236,7 @@ func UpfileHandler(c *gin.Context) {
 						return
 					}
 					defer fnew.Close()
-					fnew.WriteString(base58.Encode([]byte(file_p.Filename)))
+					fnew.WriteString(base58.Encode([]byte(filename)))
 					fnew.WriteString("\n")
 					break
 				}
@@ -247,7 +250,7 @@ func UpfileHandler(c *gin.Context) {
 					return
 				}
 				defer fr.Close()
-				fr.WriteString(base58.Encode([]byte(file_p.Filename)))
+				fr.WriteString(base58.Encode([]byte(filename)))
 				fr.WriteString("\n")
 				break
 			}

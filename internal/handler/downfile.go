@@ -58,7 +58,7 @@ func DownfileHandler(c *gin.Context) {
 		return
 	}
 
-	filename := c.Query("filename")
+	filename := c.Param("filename")
 	if filename == "" {
 		Err.Sugar().Errorf("[%v] [%v] filename is empty", c.ClientIP(), usertoken.Mailbox)
 		resp.Code = http.StatusBadRequest

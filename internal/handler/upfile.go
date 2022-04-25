@@ -89,7 +89,7 @@ func UpfileHandler(c *gin.Context) {
 
 	if spaceInfo.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
-		resp.Msg = Status_403_expired
+		resp.Msg = Status_403_NotEnoughSpace
 		c.JSON(http.StatusForbidden, resp)
 		return
 	}
@@ -108,6 +108,12 @@ func UpfileHandler(c *gin.Context) {
 	_, err = os.Stat(userpath)
 	if err != nil {
 		err = os.MkdirAll(userpath, os.ModeDir)
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		err = os.MkdirAll(filepath.Join(userpath, configs.FilRecordsDir), os.ModeDir)
 		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 			c.JSON(http.StatusInternalServerError, resp)
@@ -184,12 +190,73 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
+	fs, err := tools.WalkDir(filepath.Join(userpath, configs.FilRecordsDir))
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	if len(fs) == 0 {
+		recordsname := filepath.Join(userpath, configs.FilRecordsDir, fmt.Sprintf("%d", time.Now().Unix()))
+		f, err = os.Create(recordsname)
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+			resp.Msg = Status_500_unexpected
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		defer f.Close()
+		f.WriteString(base58.Encode([]byte(file_p.Filename)))
+		f.WriteString("\n")
+	} else {
+		for k, v := range fs {
+			number, err := tools.GetFileNonblankLine(filepath.Join(userpath, configs.FilRecordsDir, v))
+			if err != nil {
+				Err.Sugar().Errorf("[%v] [%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, v, err)
+				if k+1 == len(fs) {
+					Err.Sugar().Errorf("[%v] [%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, fs, err)
+					resp.Msg = Status_500_unexpected
+					c.JSON(http.StatusInternalServerError, resp)
+					return
+				}
+				continue
+			}
+			if number >= 1000 {
+				if k+1 == len(fs) {
+					recordsname := filepath.Join(userpath, configs.FilRecordsDir, fmt.Sprintf("%d", time.Now().Unix()))
+					fnew, err := os.Create(recordsname)
+					if err != nil {
+						Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+						resp.Msg = Status_500_unexpected
+						c.JSON(http.StatusInternalServerError, resp)
+						return
+					}
+					defer fnew.Close()
+					fnew.WriteString(base58.Encode([]byte(file_p.Filename)))
+					fnew.WriteString("\n")
+					break
+				}
+				continue
+			} else {
+				fr, err := os.Open(filepath.Join(userpath, configs.FilRecordsDir, v))
+				if err != nil {
+					Err.Sugar().Errorf("[%v] [%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, v, err)
+					resp.Msg = Status_500_unexpected
+					c.JSON(http.StatusInternalServerError, resp)
+					return
+				}
+				defer fr.Close()
+				fr.WriteString(base58.Encode([]byte(file_p.Filename)))
+				fr.WriteString("\n")
+				break
+			}
+		}
+	}
+	go uploadToStorage(fpath, usertoken.Mailbox, fileid)
 	resp.Code = http.StatusOK
 	resp.Msg = Status_200_default
 	c.JSON(http.StatusOK, resp)
-
-	go uploadToStorage(fpath, usertoken.Mailbox, fileid)
-
 	return
 }
 

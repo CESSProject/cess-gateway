@@ -1,15 +1,18 @@
 package tools
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/snowflake"
@@ -100,4 +103,41 @@ var reg_mail = regexp.MustCompile(`^[0-9a-z][_,0-9a-z-]{0,31}@([0-9a-z][0-9a-z-]
 //
 func VerifyMailboxFormat(mailbox string) bool {
 	return reg_mail.MatchString(mailbox)
+}
+
+// Get all files in dir
+func WalkDir(dir string) ([]string, error) {
+	files := make([]string, 0)
+	fs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return files, err
+	} else {
+		for _, v := range fs {
+			if !v.IsDir() {
+				files = append(files, v.Name())
+			}
+		}
+	}
+	return files, nil
+}
+
+//Get the number of non-blank lines in a file
+func GetFileNonblankLine(path string) (int, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0, err
+	}
+	count := 0
+	defer file.Close()
+	buffer := bufio.NewReader(file)
+	for {
+		ctx, _, err := buffer.ReadLine()
+		if err != nil {
+			return count, nil
+		}
+		if strings.TrimSpace(string(ctx)) == "" {
+			continue
+		}
+		count++
+	}
 }

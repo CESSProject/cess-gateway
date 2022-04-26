@@ -27,7 +27,6 @@ func FilelistHandler(c *gin.Context) {
 	}
 	// token
 	htoken := c.Request.Header.Get("Authorization")
-	fmt.Println(htoken)
 	if htoken == "" {
 		Err.Sugar().Errorf("[%v] head missing token", c.ClientIP())
 		c.JSON(http.StatusUnauthorized, resp)
@@ -90,7 +89,7 @@ func FilelistHandler(c *gin.Context) {
 		return
 	}
 	sort.Strings(fs)
-	if len(fs) > 0 {
+	if len(fs) <= 0 {
 		Err.Sugar().Errorf("[%v] [%v] [%v] not found records file", c.ClientIP(), usertoken.Mailbox, filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId)))
 		c.JSON(http.StatusInternalServerError, resp)
 		return
@@ -151,16 +150,21 @@ func FilelistHandler(c *gin.Context) {
 		var data_names = make([]string, 0)
 		if len(fnamelist) <= size {
 			for i := range fnamelist {
-				data_names = append(data_names, string(base58.Decode(fnamelist[i])))
+				if len(base58.Decode(fnamelist[i])) > 0 {
+					data_names = append(data_names, string(base58.Decode(fnamelist[i])))
+				}
 			}
 		} else {
 			for i := 0; i < size; i++ {
-				data_names = append(data_names, string(base58.Decode(fnamelist[len(fnamelist)-size+i])))
+				if len(base58.Decode(fnamelist[len(fnamelist)-size+i])) > 0 {
+					data_names = append(data_names, string(base58.Decode(fnamelist[len(fnamelist)-size+i])))
+				}
 			}
 		}
 		resp.Code = http.StatusOK
 		resp.Msg = "success"
 		resp.Data = data_names
+		c.JSON(http.StatusOK, resp)
 		return
 	} else {
 		strartIndex = page * 30

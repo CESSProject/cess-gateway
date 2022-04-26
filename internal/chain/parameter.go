@@ -40,7 +40,7 @@ const (
 	ChainTx_FileBank_Update          = "FileBank.update"
 	ChainTx_FileMap_Add_schedule     = "FileMap.registration_scheduler"
 	ChainTx_FileBank_PutMetaInfo     = "FileBank.update_dupl"
-	ChainTx_FileBank_HttpUpload      = "FileBank.http_upload"
+	ChainTx_FileBank_Upload          = "FileBank.upload"
 	ChainTx_FileBank_HttpDeleteFile  = "FileBank.http_delete"
 )
 
@@ -53,8 +53,9 @@ type RegisterMsg struct {
 
 //---SchedulerInfo
 type SchedulerInfo struct {
-	Ip    types.Bytes     `json:"ip"`
-	Owner types.AccountID `json:"acc"`
+	Ip              types.Bytes
+	Stash_user      types.AccountID
+	Controller_user types.AccountID
 }
 
 //---FileMetaInfo

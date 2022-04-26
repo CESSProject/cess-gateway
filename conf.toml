@@ -1,9 +1,18 @@
+#Cess chain address
 ChainAddr     = ""
+#The ip address that the cess-gateway service listens to
 ServiceAddr   = ""
+#The port number on which the cess-gateway service listens
 ServicePort   = ""
+#The address of the wallet account
 AccountAddr   = ""
+#Seed for wallet account
 AccountSeed   = ""
+#Email address
 EmailAddress  = ""
+#Email password
 EmailPassword = ""
+#Outgoing server address of SMTP service
 EmailHost     = ""
+#Outgoing server port number of SMTP service
 EmailHostPort = 0

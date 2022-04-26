@@ -270,7 +270,7 @@ func UpfileHandler(c *gin.Context) {
 				}
 				continue
 			} else {
-				fr, err := os.Open(filepath.Join(userpath, configs.FilRecordsDir, v))
+				fr, err := os.OpenFile(filepath.Join(userpath, configs.FilRecordsDir, v), os.O_WRONLY|os.O_APPEND, os.ModePerm)
 				if err != nil {
 					Err.Sugar().Errorf("[%v] [%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, v, err)
 					resp.Msg = Status_500_unexpected
@@ -280,6 +280,7 @@ func UpfileHandler(c *gin.Context) {
 				defer fr.Close()
 				fr.WriteString(base58.Encode([]byte(filename)))
 				fr.WriteString("\n")
+				fmt.Println("========")
 				break
 			}
 		}

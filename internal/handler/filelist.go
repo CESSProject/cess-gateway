@@ -69,7 +69,9 @@ func FilelistHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, resp)
 			return
 		}
-		defaultPage = false
+		if page > 0 {
+			defaultPage = false
+		}
 	}
 	if sizes != "" {
 		size, err = strconv.Atoi(sizes)
@@ -78,7 +80,9 @@ func FilelistHandler(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, resp)
 			return
 		}
-		defaultSize = false
+		if size > 0 {
+			defaultSize = false
+		}
 	}
 	resp.Code = http.StatusInternalServerError
 	resp.Msg = Status_500_unexpected
@@ -165,15 +169,86 @@ func FilelistHandler(c *gin.Context) {
 		resp.Msg = "success"
 		resp.Data = data_names
 		c.JSON(http.StatusOK, resp)
-		return
 	} else {
 		strartIndex = page * 30
-		strartIndex = strartIndex
+		filesindex := strartIndex/1000 + 1
+		if filesindex > len(fs) {
+			Err.Sugar().Errorf("[%v] [%v] invalid page", c.ClientIP(), usertoken.Mailbox)
+			resp.Code = http.StatusBadRequest
+			resp.Msg = Status_400_default
+			c.JSON(http.StatusOK, resp)
+			return
+		}
+		if defaultSize {
+			size = 30
+		} else {
+			if size > 1000 {
+				size = 1000
+			}
+		}
+		var fnamelist = make([]string, size)
+		file, err := os.Open(filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId), configs.FilRecordsDir, fs[filesindex-1]))
+		if err != nil {
+			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		defer file.Close()
+		buffer := bufio.NewReader(file)
+		for {
+			ctx, _, err := buffer.ReadLine()
+			if err != nil {
+				break
+			}
+			if strings.TrimSpace(string(ctx)) == "" {
+				continue
+			}
+			fnamelist = append(fnamelist, string(ctx))
+		}
+		if len(fnamelist) < size && filesindex > 1 {
+			file, err := os.Open(filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId), configs.FilRecordsDir, fs[filesindex-2]))
+			if err != nil {
+				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+				c.JSON(http.StatusInternalServerError, resp)
+				return
+			}
+			defer file.Close()
+			var fnamelist_pre = make([]string, 1000)
+			buffer := bufio.NewReader(file)
+			for {
+				ctx, _, err := buffer.ReadLine()
+				if err != nil {
+					break
+				}
+				if strings.TrimSpace(string(ctx)) == "" {
+					continue
+				}
+				fnamelist_pre = append(fnamelist_pre, string(ctx))
+			}
+			if (size - len(fnamelist)) > len(fnamelist_pre) {
+				fnamelist = append(fnamelist, fnamelist_pre...)
+			} else {
+				fnamelist = append(fnamelist, fnamelist_pre[(len(fnamelist_pre)+len(fnamelist)-size):]...)
+			}
+		}
+		var data_names = make([]string, 0)
+		if len(fnamelist) <= size {
+			for i := range fnamelist {
+				if len(base58.Decode(fnamelist[i])) > 0 {
+					data_names = append(data_names, string(base58.Decode(fnamelist[i])))
+				}
+			}
+		} else {
+			for i := 0; i < size; i++ {
+				if len(base58.Decode(fnamelist[len(fnamelist)-size+i])) > 0 {
+					data_names = append(data_names, string(base58.Decode(fnamelist[len(fnamelist)-size+i])))
+				}
+			}
+		}
+		resp.Code = http.StatusOK
+		resp.Msg = "success"
+		resp.Data = data_names
+		c.JSON(http.StatusOK, resp)
 	}
-
-	// strartIndex :=
-	resp.Code = http.StatusOK
-	resp.Msg = "success"
-	//resp.Data = fnames
-	c.JSON(http.StatusOK, resp)
+	return
 }

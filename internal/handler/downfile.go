@@ -110,7 +110,7 @@ func DownfileHandler(c *gin.Context) {
 	defer os.Remove(fpath)
 	_, err = os.Stat(fpath)
 	if err == nil {
-		c.Writer.Header().Add("inline", fmt.Sprintf("inline; filename=%v", filename))
+		c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%v", filename))
 		c.Writer.Header().Add("Content-Type", "application/octet-stream")
 		c.File(fpath)
 		return
@@ -141,7 +141,7 @@ func DownfileHandler(c *gin.Context) {
 		return
 	}
 	//c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filehash))
-	c.Writer.Header().Add("inline", fmt.Sprintf("inline; filename=%v", filename))
+	c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%v", filename))
 	c.Writer.Header().Add("Content-Type", "application/octet-stream")
 	c.File(fpath)
 	return

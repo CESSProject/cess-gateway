@@ -60,6 +60,16 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, resp)
 		return
 	}
+
+	db, err := db.GetDB()
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = Status_500_db
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
 	resp.Code = http.StatusBadRequest
 	resp.Msg = Status_400_default
 	filename := c.Param("filename")
@@ -68,6 +78,30 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, resp)
 		return
 	}
+
+	key, err := tools.CalcMD5(usertoken.Mailbox + filename)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	ok, err := db.Has(key)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = Status_500_db
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+	if ok {
+		resp.Code = http.StatusForbidden
+		resp.Msg = Status_403_dufilename
+		c.JSON(http.StatusForbidden, resp)
+		return
+	}
+
 	content_length := c.Request.ContentLength
 	if content_length <= 0 {
 		Err.Sugar().Errorf("[%v] [%v] contentLength <= 0", c.ClientIP(), usertoken.Mailbox)
@@ -165,13 +199,7 @@ func UpfileHandler(c *gin.Context) {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		return
 	}
-	db, err := db.GetDB()
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
-		resp.Msg = Status_500_db
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
+
 	fkey, err := tools.CalcMD5(usertoken.Mailbox + filename)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
@@ -242,7 +270,7 @@ func UpfileHandler(c *gin.Context) {
 				}
 				continue
 			} else {
-				fr, err := os.Open(filepath.Join(userpath, configs.FilRecordsDir, v))
+				fr, err := os.OpenFile(filepath.Join(userpath, configs.FilRecordsDir, v), os.O_WRONLY|os.O_APPEND, os.ModePerm)
 				if err != nil {
 					Err.Sugar().Errorf("[%v] [%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, v, err)
 					resp.Msg = Status_500_unexpected
@@ -252,6 +280,7 @@ func UpfileHandler(c *gin.Context) {
 				defer fr.Close()
 				fr.WriteString(base58.Encode([]byte(filename)))
 				fr.WriteString("\n")
+				fmt.Println("========")
 				break
 			}
 		}

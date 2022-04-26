@@ -43,8 +43,7 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 
 	c, err := types.NewCall(
 		meta,
-		ChainTx_FileBank_HttpUpload,
-		types.NewAccountID(bytes),
+		ChainTx_FileBank_Upload,
 		types.Bytes([]byte(userwallet)),
 		types.Bytes([]byte(filename)),
 		types.Bytes([]byte(fileid)),

@@ -116,7 +116,7 @@ Response Schema: `application/json`
 curl "url"/auth -X POST -d '{"mailbox": "", "captcha": 0}' -H "Content-Type: application/json"
 ```
 
-## Put a file
+## Upload a file
 
 | **PUT** /"file name" |
 | -------------------- |
@@ -154,7 +154,7 @@ Response Schema: `application/json`
 curl -X PUT "url"/test.log -F 'file=@test.log' -H "Authorization: "token""
 ```
 
-## Get a file
+## Download a file
 
 | **GET** /"file name" |
 | -------------------- |
@@ -215,7 +215,7 @@ Response Schema: `application/json`
 curl -X DELETE "url"/test.log -H "Authorization: "token""
 ```
 
-## List previous puts
+## List previous operation
 
 | **GET** /files |
 | -------------- |

@@ -62,8 +62,8 @@ type Event_FaucetTopUpMoney struct {
 
 type Event_LessThan24Hours struct {
 	Phase  types.Phase
-	Last   types.BlockNumber
-	Now    types.BlockNumber
+	Last   types.U32
+	Now    types.U32
 	Topics []types.Hash
 }
 type Event_AlreadyFrozen struct {

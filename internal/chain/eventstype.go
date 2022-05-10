@@ -230,16 +230,16 @@ type MyEventRecords struct {
 	SegmentBook_PPBNoOnTimeSubmit []Event_PPBNoOnTimeSubmit
 	SegmentBook_PPDNoOnTimeSubmit []Event_PPDNoOnTimeSubmit
 	//Sminer
-	Sminer_Registered            []Event_Registered
-	Sminer_TimedTask             []Event_TimedTask
-	Sminer_DrawFaucetMoney       []Event_DrawFaucetMoney
-	Sminer_FaucetTopUpMoney      []Event_FaucetTopUpMoney
-	Sminer_Event_LessThan24Hours []Event_LessThan24Hours
-	Sminer_AlreadyFrozen         []Event_AlreadyFrozen
-	Sminer_MinerExit             []Event_MinerExit
-	Sminer_MinerClaim            []Event_MinerClaim
-	Sminer_IncreaseCollateral    []Event_IncreaseCollateral
-	Sminer_Deposit               []Event_Deposit
+	Sminer_Registered         []Event_Registered
+	Sminer_TimedTask          []Event_TimedTask
+	Sminer_DrawFaucetMoney    []Event_DrawFaucetMoney
+	Sminer_FaucetTopUpMoney   []Event_FaucetTopUpMoney
+	Sminer_LessThan24Hours    []Event_LessThan24Hours
+	Sminer_AlreadyFrozen      []Event_AlreadyFrozen
+	Sminer_MinerExit          []Event_MinerExit
+	Sminer_MinerClaim         []Event_MinerClaim
+	Sminer_IncreaseCollateral []Event_IncreaseCollateral
+	Sminer_Deposit            []Event_Deposit
 	//FileBank
 	FileBank_DeleteFile           []Event_DeleteFile
 	FileBank_BuySpace             []Event_BuySpace

@@ -199,7 +199,7 @@ func downloadFromStorage(fpath string, fid int64) error {
 
 		var respbody rpc.RespBody
 		err = proto.Unmarshal(resp.Body, &respbody)
-		if err != nil || respbody.Code != 0 {
+		if err != nil || respbody.Code != 200 {
 			return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
 		}
 		var blockData rpc.FileDownloadInfo

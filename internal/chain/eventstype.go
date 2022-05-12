@@ -36,6 +36,18 @@ type Event_PPDNoOnTimeSubmit struct {
 	Topics    []types.Hash
 }
 
+type Event_ChallengeProof struct {
+	Phase  types.Phase
+	PeerId types.U64
+	Topics []types.Hash
+}
+
+type Event_VerifyProof struct {
+	Phase  types.Phase
+	PeerId types.U64
+	Topics []types.Hash
+}
+
 //------------------------Sminer---------------------------------
 type Event_Registered struct {
 	Phase      types.Phase
@@ -176,6 +188,27 @@ type Event_UserAuth struct {
 	Topics   []types.Hash
 }
 
+type Event_FillerUpload struct {
+	Phase    types.Phase
+	Acc      types.AccountID
+	Filesize types.U64
+	Topics   []types.Hash
+}
+
+type Event_ClearInvalidFile struct {
+	Phase  types.Phase
+	Acc    types.AccountID
+	Fileid types.Bytes
+	Topics []types.Hash
+}
+
+type Event_RecoverFile struct {
+	Phase  types.Phase
+	Acc    types.AccountID
+	Fileid types.Bytes
+	Topics []types.Hash
+}
+
 //------------------------FileMap--------------------------------
 type Event_RegistrationScheduler struct {
 	Phase  types.Phase
@@ -229,6 +262,8 @@ type MyEventRecords struct {
 	SegmentBook_VPDVerified       []Event_VPABCD_Submit_Verify
 	SegmentBook_PPBNoOnTimeSubmit []Event_PPBNoOnTimeSubmit
 	SegmentBook_PPDNoOnTimeSubmit []Event_PPDNoOnTimeSubmit
+	SegmentBook_ChallengeProof    []Event_ChallengeProof
+	SegmentBook_VerifyProof       []Event_VerifyProof
 	//Sminer
 	Sminer_Registered         []Event_Registered
 	Sminer_TimedTask          []Event_TimedTask
@@ -251,7 +286,9 @@ type MyEventRecords struct {
 	FileBank_Purchased            []Event_Purchased
 	FileBank_InsertFileSlice      []Event_InsertFileSlice
 	FileBank_LeaseExpired         []Event_LeaseExpired
-	FileBank_UserAuth             []Event_UserAuth
+	FileBank_FillerUpload         []Event_FillerUpload
+	FileBank_ClearInvalidFile     []Event_ClearInvalidFile
+	FileBank_RecoverFile          []Event_RecoverFile
 	//FileMap
 	FileMap_RegistrationScheduler []Event_RegistrationScheduler
 	//other system

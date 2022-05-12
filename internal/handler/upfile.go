@@ -401,7 +401,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		if err != nil {
 			return errors.Wrap(err, "[Error]Error getting reply from schedule, transfer failed")
 		}
-		if res.Code != 0 {
+		if res.Code != 200 {
 			err = errors.New(res.Msg)
 			return errors.Wrap(err, "[Error]Upload file fail!scheduler problem")
 		}

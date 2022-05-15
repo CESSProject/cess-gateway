@@ -60,23 +60,38 @@ type SchedulerInfo struct {
 
 //---FileMetaInfo
 type FileMetaInfo struct {
-	File_Name   types.Bytes         `json:"file_name"`   //File name
-	FileSize    types.U64           `json:"file_size"`   //File size
-	FileHash    types.Bytes         `json:"file_hash"`   //File hash
-	Public      types.Bool          `json:"public"`      //Public or not
-	UserAddr    types.AccountID     `json:"user_addr"`   //Upload user's address
-	FileState   types.Bytes         `json:"file_state"`  //File state
-	Backups     types.U8            `json:"backups"`     //Number of backups
-	Downloadfee types.U128          `json:"downloadfee"` //Download fee
-	FileDupl    []FileDuplicateInfo `json:"file_dupl"`   //File backup information list
+	File_Name   types.Bytes
+	FileSize    types.U64
+	FileHash    types.Bytes
+	Public      types.Bool
+	UserAddr    types.AccountID
+	FileState   types.Bytes
+	Backups     types.U8
+	Downloadfee types.U128
+	FileDupl    []FileDuplicateInfo
 }
 
 type FileDuplicateInfo struct {
-	DuplId    types.Bytes     `json:"dupl_id"`    //Backup id
-	RandKey   types.Bytes     `json:"rand_key"`   //Random key
-	SliceNum  types.U16       `json:"slice_num"`  //Number of slices
-	FileSlice []FileSliceInfo `json:"file_slice"` //Slice information list
+	MinerId   types.U64
+	BlockNum  types.U32
+	ScanSize  types.U32
+	Acc       types.AccountID
+	MinerIp   types.Bytes
+	DuplId    types.Bytes
+	RandKey   types.Bytes
+	BlockInfo []BlockInfo
 }
+type BlockInfo struct {
+	BlockIndex types.U32
+	BlockSize  types.U32
+}
+
+// type FileDuplicateInfo struct {
+// 	DuplId    types.Bytes     `json:"dupl_id"`    //Backup id
+// 	RandKey   types.Bytes     `json:"rand_key"`   //Random key
+// 	SliceNum  types.U16       `json:"slice_num"`  //Number of slices
+// 	FileSlice []FileSliceInfo `json:"file_slice"` //Slice information list
+// }
 
 type FileSliceInfo struct {
 	SliceId   types.Bytes   `json:"slice_id"`   //Slice id

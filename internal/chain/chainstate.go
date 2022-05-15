@@ -63,12 +63,11 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileMap_FileMetaInfo)
 	}
-
-	id, err := types.EncodeToBytes(fmt.Sprintf("%v", fileid))
+	fileid_s := fmt.Sprintf("%d", fileid)
+	id, err := types.EncodeToBytes([]byte(fileid_s))
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileBank, FileMap_FileMetaInfo)
 	}
-
 	key, err := types.CreateStorageKey(meta, State_FileBank, FileMap_FileMetaInfo, id)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileMap_FileMetaInfo)
@@ -150,8 +149,11 @@ func GetUserSpaceInfo(wallet string) (UserStorageSpace, error) {
 	if err != nil {
 		return data, err
 	}
-
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceInfo, bytes)
+	b, err := types.EncodeToBytes(types.NewAccountID(bytes))
+	if err != nil {
+		return data, err
+	}
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceInfo, b)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserSpaceInfo)
 	}

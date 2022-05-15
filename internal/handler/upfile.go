@@ -280,7 +280,6 @@ func UpfileHandler(c *gin.Context) {
 				defer fr.Close()
 				fr.WriteString(base58.Encode([]byte(filename)))
 				fr.WriteString("\n")
-				fmt.Println("========")
 				break
 			}
 		}

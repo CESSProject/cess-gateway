@@ -17,9 +17,9 @@ var (
 )
 
 // init
-func init() {
+func Init() {
 	var err error
-	r, err = gsrpc.NewSubstrateAPI(configs.ChainAddr)
+	r, err = gsrpc.NewSubstrateAPI(configs.Confile.ChainAddr)
 	if err != nil {
 		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
 		os.Exit(1)

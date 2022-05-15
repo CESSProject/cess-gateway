@@ -2,6 +2,7 @@ package main
 
 import (
 	"cess-gateway/configs"
+	"cess-gateway/internal/chain"
 	"cess-gateway/internal/handler"
 
 	"fmt"
@@ -42,6 +43,7 @@ func init() {
 
 // Program entry
 func main() {
+	chain.Init()
 	//start-up
 	handler.Main()
 }

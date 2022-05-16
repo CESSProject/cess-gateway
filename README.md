@@ -14,7 +14,7 @@ we are happy to communicate with you.
 
 # Register a wallet
 
-**Before using, you should refer to the following process to get the token and space**
+**Before using, you should refer to the following process to get the token and storage space**
 
 * First apply for a wallet account in the block explorer, and then buy CESS tokens. If it is a test network, you can get it for free.
 ![createAccount](https://github.com/CESSProject/W3F-illustration/blob/main/httpservice/createAccount.PNG)

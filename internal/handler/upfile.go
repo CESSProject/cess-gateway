@@ -339,13 +339,6 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		return
 	}
 
-	var filesize int64 = 0
-	if file.Size()/1024 == 0 {
-		filesize = 1
-	} else {
-		filesize = file.Size() / 1024
-	}
-
 	err = chain.FileMetaInfoOnChain(
 		configs.Confile.AccountSeed,
 		configs.Confile.AccountAddr,
@@ -354,7 +347,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		filehash,
 		false,
 		3,
-		filesize,
+		file.Size(),
 		new(big.Int).SetUint64(0),
 	)
 	if err != nil {

@@ -172,7 +172,6 @@ func GrantTokenHandler(c *gin.Context) {
 		}
 		body := "Hello, " + reqmsg.Mailbox + "!\nCongratulations on your successful authentication, your token is:\n"
 		body += usertoken
-		fmt.Println(body)
 		err = communication.SendPlainMail(
 			configs.Confile.EmailHost,
 			configs.Confile.EmailHostPort,

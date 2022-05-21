@@ -64,7 +64,7 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileMap_FileMetaInfo)
 	}
 	fileid_s := fmt.Sprintf("%d", fileid)
-	id, err := types.EncodeToBytes([]byte(fileid_s))
+	id, err := types.EncodeToBytes(fileid_s)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileBank, FileMap_FileMetaInfo)
 	}
@@ -104,12 +104,15 @@ func GetSpaceDetailsInfo(wallet string) ([]UserSpaceListInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceList)
 	}
 
-	bytes, err := tools.DecodeToPub(wallet)
+	bytes, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
 	if err != nil {
 		return data, err
 	}
-
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceList, bytes)
+	b, err := types.EncodeToBytes(types.NewAccountID(bytes))
+	if err != nil {
+		return data, err
+	}
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceList, b)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserSpaceList)
 	}
@@ -145,7 +148,7 @@ func GetUserSpaceInfo(wallet string) (UserStorageSpace, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceInfo)
 	}
 
-	bytes, err := tools.DecodeToPub(wallet)
+	bytes, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
 	if err != nil {
 		return data, err
 	}
@@ -189,12 +192,15 @@ func GetFilelistInfo(wallet string) ([]types.Bytes, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserFilelistInfo)
 	}
 
-	bytes, err := tools.DecodeToPub(wallet)
+	bytes, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:DecodeToPub]", State_FileBank, FileBank_UserFilelistInfo)
 	}
-
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserFilelistInfo, bytes)
+	b, err := types.EncodeToBytes(types.NewAccountID(bytes))
+	if err != nil {
+		return data, err
+	}
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserFilelistInfo, b)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserFilelistInfo)
 	}

@@ -82,7 +82,7 @@ type FileDuplicateInfo struct {
 	BlockInfo []BlockInfo
 }
 type BlockInfo struct {
-	BlockIndex types.U32
+	BlockIndex types.Bytes
 	BlockSize  types.U32
 }
 

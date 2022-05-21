@@ -287,6 +287,7 @@ func UpfileHandler(c *gin.Context) {
 	go uploadToStorage(fpath, usertoken.Mailbox, fileid)
 	resp.Code = http.StatusOK
 	resp.Msg = Status_200_default
+	resp.Data = fmt.Sprintf("%v", fileid)
 	c.JSON(http.StatusOK, resp)
 	return
 }
@@ -339,13 +340,6 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		return
 	}
 
-	var filesize int64 = 0
-	if file.Size()/1024 == 0 {
-		filesize = 1
-	} else {
-		filesize = file.Size() / 1024
-	}
-
 	err = chain.FileMetaInfoOnChain(
 		configs.Confile.AccountSeed,
 		configs.Confile.AccountAddr,
@@ -354,7 +348,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		filehash,
 		false,
 		3,
-		filesize,
+		file.Size(),
 		new(big.Int).SetUint64(0),
 	)
 	if err != nil {
@@ -381,7 +375,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 	reqmsg.Method = configs.RpcMethod_WriteFile
 	reqmsg.Service = configs.RpcService_Scheduler
 	commit := func(num int, data []byte) error {
-		blockinfo.BlockNum = int32(num) + 1
+		blockinfo.BlockIndex = int32(num) + 1
 		blockinfo.Data = data
 		info, err := proto.Marshal(&blockinfo)
 		if err != nil {
@@ -412,7 +406,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 	} else {
 		blocktotal = blocks + 1
 	}
-	blockinfo.Blocks = int32(blocktotal)
+	blockinfo.BlockTotal = int32(blocktotal)
 
 	for i := 0; i < blocktotal; i++ {
 		block := make([]byte, 0)

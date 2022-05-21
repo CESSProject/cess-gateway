@@ -36,7 +36,7 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 		return errors.Wrap(err, "GetMetadataLatest")
 	}
 
-	bytes, err := tools.DecodeToPub(userwallet)
+	b, err := tools.DecodeToPub(userwallet, tools.ChainCessTestPrefix)
 	if err != nil {
 		return errors.Wrap(err, "DecodeToPub")
 	}
@@ -134,7 +134,7 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 				}
 				if events.FileBank_FileUpload != nil {
 					for i := 0; i < len(events.FileBank_FileUpload); i++ {
-						if events.FileBank_FileUpload[i].Acc == types.NewAccountID(bytes) {
+						if events.FileBank_FileUpload[i].Acc == types.NewAccountID(b) {
 							return nil
 						}
 					}
@@ -179,7 +179,7 @@ func DeleteFileOnChain(phrase, wallet, fileid string) error {
 		return errors.Wrap(err, "EncodeToBytes")
 	}
 
-	walletaddr, err := tools.DecodeToPub(wallet)
+	walletaddr, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
 	if err != nil {
 		return errors.Wrap(err, "DecodeToPub")
 	}

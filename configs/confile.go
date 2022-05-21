@@ -43,7 +43,7 @@ func ParseConfile() error {
 		return err
 	}
 
-	err = tools.VerityAddress(Confile.AccountAddr, tools.SubstratePrefix)
+	err = tools.VerityAddress(Confile.AccountAddr, tools.ChainCessTestPrefix)
 	if err != nil {
 		return err
 	}

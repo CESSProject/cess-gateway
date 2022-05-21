@@ -64,7 +64,7 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileMap_FileMetaInfo)
 	}
 	fileid_s := fmt.Sprintf("%d", fileid)
-	id, err := types.EncodeToBytes([]byte(fileid_s))
+	id, err := types.EncodeToBytes(fileid_s)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileBank, FileMap_FileMetaInfo)
 	}

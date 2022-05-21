@@ -287,6 +287,7 @@ func UpfileHandler(c *gin.Context) {
 	go uploadToStorage(fpath, usertoken.Mailbox, fileid)
 	resp.Code = http.StatusOK
 	resp.Msg = Status_200_default
+	resp.Data = fmt.Sprintf("%v", fileid)
 	c.JSON(http.StatusOK, resp)
 	return
 }
@@ -374,7 +375,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 	reqmsg.Method = configs.RpcMethod_WriteFile
 	reqmsg.Service = configs.RpcService_Scheduler
 	commit := func(num int, data []byte) error {
-		blockinfo.BlockNum = int32(num) + 1
+		blockinfo.BlockIndex = int32(num) + 1
 		blockinfo.Data = data
 		info, err := proto.Marshal(&blockinfo)
 		if err != nil {
@@ -405,7 +406,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 	} else {
 		blocktotal = blocks + 1
 	}
-	blockinfo.Blocks = int32(blocktotal)
+	blockinfo.BlockTotal = int32(blocktotal)
 
 	for i := 0; i < blocktotal; i++ {
 		block := make([]byte, 0)

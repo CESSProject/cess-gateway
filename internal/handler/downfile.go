@@ -180,7 +180,7 @@ func downloadFromStorage(fpath string, fid int64) error {
 
 	wantfile.FileId = fmt.Sprintf("%v", fid)
 	wantfile.WalletAddress = configs.Confile.AccountAddr
-	wantfile.Blocks = 1
+	wantfile.BlockIndex = 1
 
 	reqmsg := rpc.ReqMsg{}
 	reqmsg.Method = configs.RpcMethod_ReadFile
@@ -213,10 +213,10 @@ func downloadFromStorage(fpath string, fid int64) error {
 			return err
 		}
 
-		if blockData.Blocks == blockData.BlockNum {
+		if blockData.BlockIndex == blockData.BlockTotal {
 			break
 		}
-		wantfile.Blocks++
+		wantfile.BlockIndex++
 	}
 	return nil
 }

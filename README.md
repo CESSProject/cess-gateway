@@ -54,6 +54,8 @@ git clone https://github.com/CESSProject/cess-gateway.git
 cd cess-gateway/
 go build -o gateway cmd/main.go
 ```
+If all goes well, you will get a program called `gateway`.
+
 
 # Get started with gateway
 
@@ -99,7 +101,7 @@ EmailHostPort = 0
 
 ```
 sudo chmod +x gateway
-nohup ./gateway 2>&1 &
+sudo nohup ./gateway 2>&1 &
 ```
 
 

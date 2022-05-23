@@ -1,20 +1,17 @@
 # <h1 align="center">CESS-GATEWAY &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.16-blue.svg" /></a></h1>
 
-cess-gateway is a service using REST API specification for accessing cess cloud storage.
+cess-gateway is a service that using REST API specification for accessing CESS cloud storage.
 
 
 
 # Reporting a Vulnerability
 
-If you find any bugs or good suggestions, Please send an email to frode@cess.one,
+If you find out any system bugs or you have a better suggestions, Please send an email to frode@cess.one,
 we are happy to communicate with you.
 
 
-
 # System Requirements
-
 - Linux-amd64
-
 
 
 # Build from source
@@ -30,7 +27,6 @@ sudo apt upgrade -y && sudo apt install make gcc git curl wget vim util-linux -y
 **<2> Install go locale**
 
 CESS-Gateway requires [Go1 16.5](https://golang.org/dl/) or higher.
-
 > See the [official Golang installation instructions](https://golang.org/doc/install) If you get stuck in the following process.
 
 - Download go1.16.5 compress the package and extract it to the /use/local directory:
@@ -58,8 +54,6 @@ git clone https://github.com/CESSProject/cess-gateway.git
 cd cess-gateway/
 go build -o gateway cmd/main.go
 ```
-
-
 
 # **Start gateway**
 
@@ -107,7 +101,6 @@ EmailHostPort = 0
 sudo chmod +x gateway
 nohup ./gateway 2>&1 &
 ```
-
 
 
 # Usage for gateway API
@@ -161,8 +154,8 @@ If the mailbox uploaded by the user has been authorized, CESS-Gateway will check
 
 | field   | value                         |
 | ------- | ----------------------------- |
-| mailbox | "your mailbox address"        |
-| captcha | "captcha received by mailbox" |
+| mailbox | your mailbox address          |
+| captcha | captcha received by mailbox   |
 
 - Responses
 
@@ -181,7 +174,6 @@ curl "url"/auth -X POST -d '{"mailbox": "", "captcha": 0}' -H "Content-Type: app
 ```
 
 
-
 ## Upload a file
 
 | **PUT** /"file name" |
@@ -195,7 +187,7 @@ You need to submit the file as form data and use provide the specific field.
 
 | field         | value   |
 | ------------- | ------- |
-| Authorization | "token" |
+| Authorization | token   |
 
 - Request Body
 
@@ -221,8 +213,6 @@ Response Schema: `application/json`
 curl -X PUT "url"/test.log -F 'file=@test.log' -H "Authorization: "token""
 ```
 
-
-
 ## Download a file
 
 | **GET** /"file name" |
@@ -234,7 +224,7 @@ The get file interface is used for get files in the CESS storage system. Current
 
 | field         | value   |
 | ------------- | ------- |
-| Authorization | "token" |
+| Authorization |  token  |
 
 - Responses
 
@@ -256,10 +246,9 @@ curl -X GET "url"/test.log -H "Authorization: "token""
 ```
 
 
-
 ## Delete a file
 
-The delete file interface is used to delete a put file.
+The delete file interface is used for delete a put file.
 
 | **DELETE** /"file name" |
 | ----------------------- |
@@ -268,7 +257,7 @@ The delete file interface is used to delete a put file.
 
 | field         | value   |
 | ------------- | ------- |
-| Authorization | "token" |
+| Authorization |  token  |
 
 - Responses
 
@@ -288,9 +277,7 @@ Response Schema: `application/json`
 curl -X DELETE "url"/test.log -H "Authorization: "token""
 ```
 
-
-
-## List previous puts
+## List previous operation
 
 | **GET** /files |
 | -------------- |
@@ -301,7 +288,7 @@ List the previously put files, and display the 30 files closest to the current t
 
 | field         | value   |
 | ------------- | ------- |
-| Authorization | "token" |
+| Authorization |  token  |
 
 - Query Parameters
 
@@ -326,7 +313,6 @@ Response Schema: `application/json`
 ```
 curl -X GET "url"/files -H "Authorization: "token""
 ```
-
 
 
 ## License

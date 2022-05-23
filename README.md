@@ -26,7 +26,7 @@ sudo apt upgrade -y && sudo apt install make gcc git curl wget vim util-linux -y
 
 **<2> Install go locale**
 
-CESS-Gateway requires [Go1 16.5](https://golang.org/dl/) or higher.
+CESS-Gateway requires [Go1.16.5](https://golang.org/dl/) or higher.
 > See the [official Golang installation instructions](https://golang.org/doc/install) If you get stuck in the following process.
 
 - Download go1.16.5 compress the package and extract it to the /use/local directory:
@@ -55,7 +55,7 @@ cd cess-gateway/
 go build -o gateway cmd/main.go
 ```
 
-# **Start gateway**
+# Get started with gateway
 
 **<1> Register a polka wallet**
 

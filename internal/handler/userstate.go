@@ -15,13 +15,13 @@ func UserStateHandler(c *gin.Context) {
 		Msg:  "",
 	}
 
-	spaceDetailsList, err := chain.GetSpaceDetailsInfo(configs.Confile.AccountAddr)
+	spaceDetailsList, err := chain.GetSpaceDetailsInfo(configs.Confile.AccountSeed)
 	if err != nil {
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountAddr)
+	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountSeed)
 	if err != nil {
 		resp.Msg = err.Error()
 		c.JSON(http.StatusInternalServerError, resp)

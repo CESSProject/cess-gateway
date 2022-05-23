@@ -1,12 +1,10 @@
-#Cess chain address
-ChainAddr     = ""
+#The rpc address of the chain node
+RpcAddr       = ""
 #The ip address that the cess-gateway service listens to
 ServiceAddr   = ""
 #The port number on which the cess-gateway service listens
 ServicePort   = ""
-#The address of the wallet account
-AccountAddr   = ""
-#Seed for wallet account
+#Phrase or seed of for wallet account
 AccountSeed   = ""
 #Email address
 EmailAddress  = ""

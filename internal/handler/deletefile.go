@@ -89,7 +89,7 @@ func DeletefileHandler(c *gin.Context) {
 	}
 
 	//Delete files in cess storage service
-	err = chain.DeleteFileOnChain(configs.Confile.AccountSeed, configs.Confile.AccountAddr, fmt.Sprintf("%v", tools.BytesToInt64(fid)))
+	err = chain.DeleteFileOnChain(configs.Confile.AccountSeed, fmt.Sprintf("%v", tools.BytesToInt64(fid)))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 	}

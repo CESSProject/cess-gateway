@@ -36,11 +36,6 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 		return errors.Wrap(err, "GetMetadataLatest")
 	}
 
-	b, err := tools.DecodeToPub(userwallet, tools.ChainCessTestPrefix)
-	if err != nil {
-		return errors.Wrap(err, "DecodeToPub")
-	}
-
 	c, err := types.NewCall(
 		meta,
 		ChainTx_FileBank_Upload,
@@ -134,7 +129,7 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 				}
 				if events.FileBank_FileUpload != nil {
 					for i := 0; i < len(events.FileBank_FileUpload); i++ {
-						if events.FileBank_FileUpload[i].Acc == types.NewAccountID(b) {
+						if events.FileBank_FileUpload[i].Acc == types.NewAccountID(keyring.PublicKey) {
 							return nil
 						}
 					}
@@ -151,7 +146,7 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 }
 
 // Delete files in chain
-func DeleteFileOnChain(phrase, wallet, fileid string) error {
+func DeleteFileOnChain(phrase, fileid string) error {
 	var (
 		err         error
 		accountInfo types.AccountInfo
@@ -179,12 +174,7 @@ func DeleteFileOnChain(phrase, wallet, fileid string) error {
 		return errors.Wrap(err, "EncodeToBytes")
 	}
 
-	walletaddr, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
-	if err != nil {
-		return errors.Wrap(err, "DecodeToPub")
-	}
-
-	c, err := types.NewCall(meta, ChainTx_FileBank_HttpDeleteFile, types.NewAccountID(walletaddr), fileid_bytes)
+	c, err := types.NewCall(meta, ChainTx_FileBank_HttpDeleteFile, types.NewAccountID(keyring.PublicKey), fileid_bytes)
 	if err != nil {
 		return errors.Wrap(err, "NewCall")
 	}
@@ -267,7 +257,7 @@ func DeleteFileOnChain(phrase, wallet, fileid string) error {
 				}
 				if events.FileBank_DeleteFile != nil {
 					for i := 0; i < len(events.FileBank_DeleteFile); i++ {
-						if events.FileBank_DeleteFile[i].Acc == types.NewAccountID(walletaddr) && string(events.FileBank_DeleteFile[i].Fileid) == fileid {
+						if events.FileBank_DeleteFile[i].Acc == types.NewAccountID(keyring.PublicKey) && string(events.FileBank_DeleteFile[i].Fileid) == fileid {
 							return nil
 						}
 					}
@@ -281,4 +271,17 @@ func DeleteFileOnChain(phrase, wallet, fileid string) error {
 			return errors.Errorf("[%v]delete file timeout,please check your Internet!", t)
 		}
 	}
+}
+
+//
+func GetAddressFromPrk(prk string, prefix []byte) (string, error) {
+	keyring, err := signature.KeyringPairFromSecret(prk, 0)
+	if err != nil {
+		return "", errors.Wrap(err, "[KeyringPairFromSecret]")
+	}
+	addr, err := tools.Encode(keyring.PublicKey, tools.ChainCessTestPrefix)
+	if err != nil {
+		return "", errors.Wrap(err, "[Encode]")
+	}
+	return addr, nil
 }

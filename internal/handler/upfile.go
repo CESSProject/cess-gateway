@@ -115,7 +115,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountAddr)
+	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountSeed)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError
@@ -340,9 +340,15 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		return
 	}
 
+	addr, err := chain.GetAddressFromPrk(configs.Confile.AccountSeed, nil)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
+		return
+	}
+
 	err = chain.FileMetaInfoOnChain(
 		configs.Confile.AccountSeed,
-		configs.Confile.AccountAddr,
+		addr,
 		file.Name(),
 		strconv.FormatInt(fid, 10),
 		filehash,

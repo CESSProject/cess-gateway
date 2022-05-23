@@ -179,7 +179,11 @@ func downloadFromStorage(fpath string, fid int64) error {
 	var wantfile rpc.FileDownloadReq
 
 	wantfile.FileId = fmt.Sprintf("%v", fid)
-	wantfile.WalletAddress = configs.Confile.AccountAddr
+
+	wantfile.WalletAddress, err = chain.GetAddressFromPrk(configs.Confile.AccountSeed, nil)
+	if err != nil {
+		return err
+	}
 	wantfile.BlockIndex = 1
 
 	reqmsg := rpc.ReqMsg{}

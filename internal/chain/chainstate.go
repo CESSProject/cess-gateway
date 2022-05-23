@@ -5,6 +5,7 @@ import (
 	"cess-gateway/tools"
 	"fmt"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
 )
@@ -84,7 +85,7 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 }
 
 // Get user information on the cess chain
-func GetSpaceDetailsInfo(wallet string) ([]UserSpaceListInfo, error) {
+func GetSpaceDetailsInfo(prk string) ([]UserSpaceListInfo, error) {
 	var (
 		err  error
 		data []UserSpaceListInfo
@@ -104,14 +105,15 @@ func GetSpaceDetailsInfo(wallet string) ([]UserSpaceListInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceList)
 	}
 
-	bytes, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
+	keyring, err := signature.KeyringPairFromSecret(prk, 0)
 	if err != nil {
-		return data, err
+		return data, errors.Wrapf(err, "[%v.%v:KeyringPairFromSecret]", State_FileBank, FileBank_UserSpaceList)
 	}
-	b, err := types.EncodeToBytes(types.NewAccountID(bytes))
+	b, err := types.EncodeToBytes(types.NewAccountID(keyring.PublicKey))
 	if err != nil {
-		return data, err
+		return data, errors.Wrapf(err, "[%v.%v:KeyringPairFromSecret]", State_FileBank, FileBank_UserSpaceList)
 	}
+
 	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceList, b)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserSpaceList)

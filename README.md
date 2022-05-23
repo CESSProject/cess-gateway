@@ -75,17 +75,15 @@ Browser access: [App](https://testnet-rpc.cess.cloud/explorer) implemented by [C
 **<4> Prepare configuration file**
 
 Prepare a configuration file named "conf.toml", put it in the same directory as cess-gateway, and its contents are as follows, you need to fill in your own information into the configuration file.
-
+> Our testnet rpc address is: `wss://testnet-rpc.cess.cloud/ws/`
 ```toml
-#Cess chain address
-ChainAddr     = ""
+#The rpc address of the chain node
+RpcAddr       = ""
 #The ip address that the cess-gateway service listens to
 ServiceAddr   = ""
 #The port number on which the cess-gateway service listens
 ServicePort   = ""
-#The address of the wallet account
-AccountAddr   = ""
-#Seed for wallet account
+#Phrase or seed of for wallet account
 AccountSeed   = ""
 #Email address
 EmailAddress  = ""

@@ -9,10 +9,9 @@ import (
 )
 
 type Configfile struct {
-	ChainAddr     string `toml:"ChainAddr"`
+	RpcAddr       string `toml:"RpcAddr"`
 	ServiceAddr   string `toml:"ServiceAddr"`
 	ServicePort   string `toml:"ServicePort"`
-	AccountAddr   string `toml:"AccountAddr"`
 	AccountSeed   string `toml:"AccountSeed"`
 	EmailAddress  string `toml:"EmailAddress"`
 	EmailPassword string `toml:"EmailPassword"`
@@ -39,11 +38,6 @@ func ParseConfile() error {
 		return err
 	}
 	err = viper.Unmarshal(Confile)
-	if err != nil {
-		return err
-	}
-
-	err = tools.VerityAddress(Confile.AccountAddr, tools.ChainCessTestPrefix)
 	if err != nil {
 		return err
 	}

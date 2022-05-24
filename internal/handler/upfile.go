@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"math/big"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -79,7 +80,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	key, err := tools.CalcMD5(usertoken.Mailbox + filename)
+	key, err := tools.CalcMD5(usertoken.Mailbox + url.QueryEscape(filename))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError

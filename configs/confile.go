@@ -3,6 +3,7 @@ package configs
 import (
 	"cess-gateway/tools"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/spf13/viper"
@@ -43,7 +44,8 @@ func ParseConfile() error {
 	}
 
 	if !tools.VerifyMailboxFormat(Confile.EmailAddress) {
-		return errors.New("Email format error")
+		fmt.Printf("\x1b[%dm[err]\x1b[0m %v email format error\n", 41, Confile.EmailAddress)
+		os.Exit(1)
 	}
 
 	return nil

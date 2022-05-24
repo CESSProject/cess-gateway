@@ -119,7 +119,7 @@ func GrantTokenHandler(c *gin.Context) {
 			// Send verification code to email
 			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
 			body += fmt.Sprintf("%v", captcha)
-			body += "\nValidity: 5 minutes"
+			body += "\nvalidity: 5 minutes"
 			err = communication.SendPlainMail(
 				configs.Confile.EmailHost,
 				configs.Confile.EmailHostPort,
@@ -213,7 +213,7 @@ func GrantTokenHandler(c *gin.Context) {
 	if time.Now().Unix() < utoken.ExpirationTime {
 		resp.Code = http.StatusOK
 		resp.Msg = Status_200_default
-		resp.Data = "token=" + string(bytes)
+		resp.Data = "Please log in to your email to view the token."
 		c.JSON(http.StatusOK, resp)
 		return
 	}

@@ -130,7 +130,7 @@ func GetSpaceDetailsInfo(prk string) ([]UserSpaceListInfo, error) {
 }
 
 // Get user space information on the cess chain
-func GetUserSpaceInfo(wallet string) (UserStorageSpace, error) {
+func GetUserSpaceInfo(prk string) (UserStorageSpace, error) {
 	var (
 		err  error
 		data UserStorageSpace
@@ -150,11 +150,12 @@ func GetUserSpaceInfo(wallet string) (UserStorageSpace, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceInfo)
 	}
 
-	bytes, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
+	keyring, err := signature.KeyringPairFromSecret(prk, 0)
 	if err != nil {
-		return data, err
+		return data, errors.Wrapf(err, "[%v.%v:KeyringPairFromSecret]", State_FileBank, FileBank_UserSpaceList)
 	}
-	b, err := types.EncodeToBytes(types.NewAccountID(bytes))
+
+	b, err := types.EncodeToBytes(types.NewAccountID(keyring.PublicKey))
 	if err != nil {
 		return data, err
 	}

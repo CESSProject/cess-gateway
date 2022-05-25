@@ -54,6 +54,8 @@ const (
 	RpcMethod_WriteFile = "writefile"
 	//read method of rpc service
 	RpcMethod_ReadFile = "readfile"
+	//
+	RpcBuffer = 8 * 1024
 
 	//
 	EmailSubject_captcha = "CESS | Authorization captcha"

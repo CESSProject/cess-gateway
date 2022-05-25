@@ -315,12 +315,12 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 	}
 
 	var blockinfo rpc.FileUploadInfo
-	blockinfo.Backups = "3"
+	blockinfo.Backups = "1"
 	blockinfo.FileId = strconv.FormatInt(fid, 10)
 	blockinfo.BlockSize = 0
 	blockinfo.FileHash = filehash
 
-	blocksize := 2 * 1024 * 1024
+	blocksize := configs.RpcBuffer
 	blocktotal := 0
 
 	f, err := os.Open(fpath)

@@ -6,10 +6,6 @@ import (
 
 //
 func SendPlainMail(host string, port int, from, passwd string, to []string, subject, body string) error {
-	// serverHost := "smtp.exmail.qq.com"
-	// serverPort := 465
-	// fromEmail := "frode@cess.one"
-	// fromPasswd := "Txqyyx@9073"
 	m := gomail.NewMessage()
 	m.SetHeader("Subject", subject)
 	m.SetHeader("To", to...)

@@ -38,13 +38,14 @@ func ParseConfile() error {
 	if err != nil {
 		return err
 	}
+
 	err = viper.Unmarshal(Confile)
 	if err != nil {
 		return err
 	}
 
 	if !tools.VerifyMailboxFormat(Confile.EmailAddress) {
-		fmt.Printf("\x1b[%dm[err]\x1b[0m %v email format error\n", 41, Confile.EmailAddress)
+		fmt.Printf("\x1b[%dm[err]\x1b[0m '%v' email format error\n", 41, Confile.EmailAddress)
 		os.Exit(1)
 	}
 

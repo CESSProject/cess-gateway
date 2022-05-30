@@ -141,3 +141,12 @@ func GetFileNonblankLine(path string) (int, error) {
 		count++
 	}
 }
+
+// Create a directory
+func CreatDirIfNotExist(dir string) error {
+	_, err := os.Stat(dir)
+	if err != nil {
+		return os.MkdirAll(dir, os.ModeDir)
+	}
+	return nil
+}

@@ -1,38 +1,37 @@
 # <h1 align="center">CESS-GATEWAY &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.16-blue.svg" /></a></h1>
 
-cess-gateway is a service that using REST API specification for accessing CESS cloud storage.
+CESS-Gateway is a service that using REST API specification for accessing CESS cloud storage.
 
 
-
-# Reporting a Vulnerability
-
+## Reporting a Vulnerability
 If you find out any system bugs or you have a better suggestions, Please send an email to frode@cess.one,
 we are happy to communicate with you.
 
 
-# System Requirements
+## System Requirements
 - Linux-amd64
 
 
-# Build from source
+## Build from source
 
-**<1> Install common libraries**
+**Step 1:** Install common libraries
 
 Take the ubuntu distribution as an example:
 
-```bash
-sudo apt upgrade -y && sudo apt install make gcc git curl wget vim util-linux -y
+```shell
+sudo apt upgrade
+sudo apt install make gcc git curl wget vim util-linux -y
 ```
 
-**<2> Install go locale**
+**Step 2:** Install go locale
 
 CESS-Gateway requires [Go1.16.5](https://golang.org/dl/) or higher.
 > See the [official Golang installation instructions](https://golang.org/doc/install) If you get stuck in the following process.
 
 - Download go1.16.5 compress the package and extract it to the /use/local directory:
 
-```bash
-wget -c https://golang.org/dl/go1.16.5.linux-amd64.tar.gz -O - | sudo tar -xz -C /usr/local
+```shell
+sudo wget -c https://golang.org/dl/go1.16.5.linux-amd64.tar.gz -O - | sudo tar -xz -C /usr/local
 ```
 
 - You'll need to add `/usr/local/go/bin` to your path. For most Linux distributions you can run something like:
@@ -43,11 +42,11 @@ echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc && source ~/.bashrc
 
 - View your go version:
 
-```bash
+```shell
 go version
 ```
 
-**<3> Build a gateway**
+**Step 3:** Build a gateway
 
 ```
 git clone https://github.com/CESSProject/cess-gateway.git
@@ -57,24 +56,23 @@ go build -o gateway cmd/main.go
 If all goes well, you will get a program called `gateway`.
 
 
-# Get started with gateway
+## Get started with gateway
 
-**<1> Register a polka wallet**
+**Step 1:** Register a polka wallet
 
 Browser access: [App](https://testnet-rpc.cess.cloud/explorer) implemented by [CESS Explorer](https://github.com/CESSProject/cess-explorer), and [add an account](https://github.com/CESSProject/W3F-illustration/blob/main/gateway/createAccount.PNG).
 
-**<2> Recharge your polka wallet**
+**Step 2:** Recharge your polka wallet
 
-- If you are using the test network, Please join the [CESS discord](https://discord.gg/mYHTMfBwNS) to get it for free.
-- If you are using the official network, please buy CESS tokens.
+If you are using the test network, Please join the [CESS discord](https://discord.gg/mYHTMfBwNS) to get it for free. If you are using the official network, please buy CESS tokens.
 
-**<3> Buy space**
+**Step 3:** Buy space for your account
 
 Browser access: [App](https://testnet-rpc.cess.cloud/explorer) implemented by [CESS Explorer](https://github.com/CESSProject/cess-explorer), and [buy space](https://github.com/CESSProject/W3F-illustration/blob/main/gateway/purchaseSpace.PNG).
 
-**<4> Prepare configuration file**
+**Step 4:** Prepare configuration file
 
-Prepare a configuration file named "conf.toml", put it in the same directory as cess-gateway, and its contents are as follows, you need to fill in your own information into the configuration file.
+Prepare a configuration file named "conf.toml", put it in the same directory as `gateway`, and its contents are as follows, you need to fill in your own information into the configuration file.
 > Our testnet rpc address is: `wss://testnet-rpc.cess.cloud/ws/`
 ```toml
 #The rpc address of the chain node
@@ -95,9 +93,9 @@ EmailHost     = ""
 EmailHostPort = 0
 ```
 
-**<5>Start gateway**
+**Step 5:** Start the gateway service
 
-```
+```shell
 sudo chmod +x gateway
 sudo nohup ./gateway 2>&1 &
 ```

@@ -201,13 +201,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	fkey, err := tools.CalcMD5(usertoken.Mailbox + filename)
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
-	err = db.Put([]byte(fkey), tools.Int64ToBytes(fileid))
+	err = db.Put([]byte(key), tools.Int64ToBytes(fileid))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		resp.Msg = Status_500_db

@@ -4,38 +4,48 @@ import (
 	"cess-gateway/configs"
 	"cess-gateway/internal/chain"
 	"cess-gateway/internal/handler"
+	"cess-gateway/tools"
+	"flag"
 
 	"fmt"
 	"os"
 )
 
+// version
+const VERSION = "CESS-Gateway v0.1.0"
+
+var printVersion bool
+
 // init
 func init() {
-	if _, err := os.Stat(configs.BaseDir); err != nil {
-		if err = os.MkdirAll(configs.BaseDir, os.ModeDir); err != nil {
-			fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
-			os.Exit(1)
-		}
+	flag.BoolVar(&printVersion, "v", false, "Print version number")
+	flag.Parse()
+	if printVersion {
+		fmt.Println(VERSION)
+		os.Exit(1)
 	}
-	if _, err := os.Stat(configs.LogfileDir); err != nil {
-		if err = os.MkdirAll(configs.LogfileDir, os.ModeDir); err != nil {
-			fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
-			os.Exit(1)
-		}
-	}
-	if _, err := os.Stat(configs.DbDir); err != nil {
-		if err = os.MkdirAll(configs.DbDir, os.ModeDir); err != nil {
-			fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
-			os.Exit(1)
-		}
-	}
-	if _, err := os.Stat(configs.FileCacheDir); err != nil {
-		if err = os.MkdirAll(configs.FileCacheDir, os.ModeDir); err != nil {
-			fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
-			os.Exit(1)
-		}
-	}
+
 	if err := configs.ParseConfile(); err != nil {
+		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.BaseDir); err != nil {
+		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.LogfileDir); err != nil {
+		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.DbDir); err != nil {
+		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.FileCacheDir); err != nil {
 		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
 		os.Exit(1)
 	}

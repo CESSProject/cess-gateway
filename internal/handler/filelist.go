@@ -88,18 +88,15 @@ func FilelistHandler(c *gin.Context) {
 	}
 	resp.Code = http.StatusInternalServerError
 	resp.Msg = Status_500_unexpected
-	fs, err := tools.WalkDir(filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId), configs.FilRecordsDir))
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
-		c.JSON(http.StatusInternalServerError, resp)
+	fs, _ := tools.WalkDir(filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId), configs.FilRecordsDir))
+	if len(fs) == 0 {
+		resp.Code = http.StatusOK
+		resp.Msg = Status_200_NoFiles
+		resp.Data = nil
+		c.JSON(http.StatusOK, resp)
 		return
 	}
 	sort.Strings(fs)
-	if len(fs) <= 0 {
-		Err.Sugar().Errorf("[%v] [%v] [%v] not found records file", c.ClientIP(), usertoken.Mailbox, filepath.Join(configs.FileCacheDir, fmt.Sprintf("%v", usertoken.UserId)))
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
 	if defaultPage {
 		if defaultSize {
 			size = 30

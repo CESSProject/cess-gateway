@@ -12,36 +12,18 @@ const (
 
 // cess chain module method
 const (
-	Sminer_AllMinerItems      = "AllMiner"
-	Sminer_MinerItems         = "MinerItems"
-	Sminer_SegInfo            = "SegInfo"
-	SegmentBook_ParamSet      = "ParamSet"
-	SegmentBook_ConProofInfoA = "ConProofInfoA"
-	SegmentBook_UnVerifiedA   = "UnVerifiedA"
-	SegmentBook_UnVerifiedB   = "UnVerifiedB"
-	SegmentBook_UnVerifiedC   = "UnVerifiedC"
-	SegmentBook_UnVerifiedD   = "UnVerifiedD"
 	FileMap_FileMetaInfo      = "File"
 	FileMap_SchedulerInfo     = "SchedulerMap"
 	FileBank_UserSpaceList    = "UserSpaceList"
 	FileBank_UserSpaceInfo    = "UserHoldSpaceDetails"
 	FileBank_UserFilelistInfo = "UserHoldFileList"
 	Sminer_PurchasedSpace     = "PurchasedSpace"
-	Sminer_TotalSpace         = "AvailableSpace"
 )
 
 // cess chain Transaction name
 const (
-	ChainTx_SegmentBook_VerifyInVpa  = "SegmentBook.verify_in_vpa"
-	ChainTx_SegmentBook_VerifyInVpb  = "SegmentBook.verify_in_vpb"
-	ChainTx_SegmentBook_VerifyInVpc  = "SegmentBook.verify_in_vpc"
-	ChainTx_SegmentBook_VerifyInVpd  = "SegmentBook.verify_in_vpd"
-	ChainTx_SegmentBook_IntentSubmit = "SegmentBook.intent_submit"
-	ChainTx_FileBank_Update          = "FileBank.update"
-	ChainTx_FileMap_Add_schedule     = "FileMap.registration_scheduler"
-	ChainTx_FileBank_PutMetaInfo     = "FileBank.update_dupl"
-	ChainTx_FileBank_Upload          = "FileBank.upload"
-	ChainTx_FileBank_HttpDeleteFile  = "FileBank.http_delete"
+	ChainTx_FileBank_Upload     = "FileBank.upload"
+	ChainTx_FileBank_DeleteFile = "FileBank.delete_file"
 )
 
 //---RegisterMsg
@@ -84,28 +66,6 @@ type FileDuplicateInfo struct {
 type BlockInfo struct {
 	BlockIndex types.Bytes
 	BlockSize  types.U32
-}
-
-// type FileDuplicateInfo struct {
-// 	DuplId    types.Bytes     `json:"dupl_id"`    //Backup id
-// 	RandKey   types.Bytes     `json:"rand_key"`   //Random key
-// 	SliceNum  types.U16       `json:"slice_num"`  //Number of slices
-// 	FileSlice []FileSliceInfo `json:"file_slice"` //Slice information list
-// }
-
-type FileSliceInfo struct {
-	SliceId   types.Bytes   `json:"slice_id"`   //Slice id
-	SliceSize types.U32     `json:"slice_size"` //Slice size
-	SliceHash types.Bytes   `json:"slice_hash"` //Slice hash
-	FileShard FileShardInfo `json:"file_shard"` //Shard information
-}
-
-type FileShardInfo struct {
-	DataShardNum  types.U8      `json:"data_shard_num"`  //Number of data shard
-	RedunShardNum types.U8      `json:"redun_shard_num"` //Number of redundant shard
-	ShardHash     []types.Bytes `json:"shard_hash"`      //Shard hash list
-	ShardAddr     []types.Bytes `json:"shard_addr"`      //Store miner service addr list
-	Peerid        []types.U64   `json:"wallet_addr"`     //Store miner wallet addr list
 }
 
 //---UserInfo

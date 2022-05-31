@@ -174,7 +174,7 @@ func DeleteFileOnChain(phrase, fileid string) error {
 		return errors.Wrap(err, "EncodeToBytes")
 	}
 
-	c, err := types.NewCall(meta, ChainTx_FileBank_HttpDeleteFile, types.NewAccountID(keyring.PublicKey), fileid_bytes)
+	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, types.NewBytes(fileid_bytes))
 	if err != nil {
 		return errors.Wrap(err, "NewCall")
 	}

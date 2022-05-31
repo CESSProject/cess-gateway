@@ -169,12 +169,7 @@ func DeleteFileOnChain(phrase, fileid string) error {
 		return errors.Wrap(err, "GetMetadataLatest")
 	}
 
-	fileid_bytes, err := types.EncodeToBytes(fileid)
-	if err != nil {
-		return errors.Wrap(err, "EncodeToBytes")
-	}
-
-	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, types.NewBytes(fileid_bytes))
+	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, types.NewBytes([]byte(fileid)))
 	if err != nil {
 		return errors.Wrap(err, "NewCall")
 	}
@@ -257,7 +252,7 @@ func DeleteFileOnChain(phrase, fileid string) error {
 				}
 				if events.FileBank_DeleteFile != nil {
 					for i := 0; i < len(events.FileBank_DeleteFile); i++ {
-						if events.FileBank_DeleteFile[i].Acc == types.NewAccountID(keyring.PublicKey) && string(events.FileBank_DeleteFile[i].Fileid) == fileid {
+						if events.FileBank_DeleteFile[i].Acc == types.NewAccountID(keyring.PublicKey) && string(events.FileBank_DeleteFile[i].Fileid) == string(fileid) {
 							return nil
 						}
 					}

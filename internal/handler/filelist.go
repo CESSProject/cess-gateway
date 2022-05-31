@@ -3,12 +3,14 @@ package handler
 import (
 	"bufio"
 	"cess-gateway/configs"
+	"cess-gateway/internal/db"
 	. "cess-gateway/internal/logger"
 	"cess-gateway/internal/token"
 	"cess-gateway/tools"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -167,7 +169,7 @@ func FilelistHandler(c *gin.Context) {
 		}
 		resp.Code = http.StatusOK
 		resp.Msg = "success"
-		resp.Data = data_names
+		resp.Data = filterDeletedFiles(data_names, usertoken.Mailbox)
 		c.JSON(http.StatusOK, resp)
 	} else {
 		strartIndex = page * 30
@@ -247,8 +249,25 @@ func FilelistHandler(c *gin.Context) {
 		}
 		resp.Code = http.StatusOK
 		resp.Msg = "success"
-		resp.Data = data_names
+		resp.Data = filterDeletedFiles(data_names, usertoken.Mailbox)
 		c.JSON(http.StatusOK, resp)
 	}
 	return
+}
+
+func filterDeletedFiles(names []string, mailbox string) []string {
+	if len(names) == 0 {
+		return nil
+	}
+	db, _ := db.GetDB()
+	var new = make([]string, 0)
+	for i := 0; i < len(names); i++ {
+		key, _ := tools.CalcMD5(mailbox + url.QueryEscape(names[i]))
+		ok, _ := db.Has(key)
+		if !ok {
+			continue
+		}
+		new = append(new, names[i])
+	}
+	return new
 }

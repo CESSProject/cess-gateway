@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -59,7 +60,7 @@ func DeletefileHandler(c *gin.Context) {
 		return
 	}
 
-	key, err := tools.CalcMD5(usertoken.Mailbox + filename)
+	key, err := tools.CalcMD5(usertoken.Mailbox + url.QueryEscape(filename))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
 		c.JSON(http.StatusBadRequest, resp)

@@ -125,11 +125,20 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	if spaceInfo.Remaining_space.Uint64()*1024 < uint64(file_p.Size) {
+	remainSpace := spaceInfo.Remaining_space.Uint64()
+	backupNum := 1
+	if remainSpace < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
 		resp.Msg = Status_403_NotEnoughSpace
 		c.JSON(http.StatusForbidden, resp)
 		return
+	}
+
+	if remainSpace >= uint64(file_p.Size)*2 {
+		backupNum = 2
+	}
+	if remainSpace >= uint64(file_p.Size)*3 {
+		backupNum = 3
 	}
 
 	file_c, _, err := c.Request.FormFile("file")
@@ -279,7 +288,7 @@ func UpfileHandler(c *gin.Context) {
 			}
 		}
 	}
-	go uploadToStorage(fpath, usertoken.Mailbox, fileid)
+	go uploadToStorage(fpath, usertoken.Mailbox, fileid, backupNum)
 	resp.Code = http.StatusOK
 	resp.Msg = Status_200_default
 	resp.Data = fmt.Sprintf("%v", fileid)
@@ -288,7 +297,7 @@ func UpfileHandler(c *gin.Context) {
 }
 
 // Upload files to cess storage system
-func uploadToStorage(fpath, mailbox string, fid int64) {
+func uploadToStorage(fpath, mailbox string, fid int64, backupNum int) {
 	time.Sleep(time.Second)
 	defer func() {
 		err := recover()
@@ -309,7 +318,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 	}
 
 	var blockinfo rpc.FileUploadInfo
-	blockinfo.Backups = "1"
+	blockinfo.Backups = fmt.Sprintf("%d", backupNum)
 	blockinfo.FileId = strconv.FormatInt(fid, 10)
 	blockinfo.BlockSize = 0
 	blockinfo.FileHash = filehash
@@ -348,7 +357,7 @@ func uploadToStorage(fpath, mailbox string, fid int64) {
 		strconv.FormatInt(fid, 10),
 		filehash,
 		false,
-		3,
+		uint8(backupNum),
 		file.Size(),
 		new(big.Int).SetUint64(0),
 	)

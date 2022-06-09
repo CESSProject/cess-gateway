@@ -258,13 +258,18 @@ func filterDeletedFiles(names []string, mailbox string) []string {
 	}
 	db, _ := db.GetDB()
 	var new = make([]string, 0)
+	var duplmap = make(map[string]struct{}, 0)
 	for i := 0; i < len(names); i++ {
 		key, _ := tools.CalcMD5(mailbox + url.QueryEscape(names[i]))
 		ok, _ := db.Has(key)
 		if !ok {
 			continue
 		}
-		new = append(new, names[i])
+		duplmap[names[i]] = struct{}{}
+
+	}
+	for k, _ := range duplmap {
+		new = append(new, k)
 	}
 	return new
 }

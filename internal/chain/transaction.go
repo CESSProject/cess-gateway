@@ -4,6 +4,7 @@ import (
 	"cess-gateway/configs"
 	. "cess-gateway/internal/logger"
 	"cess-gateway/tools"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -11,6 +12,121 @@ import (
 	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/pkg/errors"
 )
+
+//
+func UploadDeclaration(transactionPrK, filehash, filename string) (string, int, error) {
+	var (
+		err         error
+		accountInfo types.AccountInfo
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("[panic]: %v", err)
+		}
+	}()
+	keyring, err := signature.KeyringPairFromSecret(transactionPrK, 0)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[KeyringPairFromSecret]")
+	}
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[GetMetadataLatest]")
+	}
+
+	c, err := types.NewCall(meta, ChainTx_FileBank_UploadDeclaration, types.NewBytes([]byte(filehash)), types.NewBytes([]byte(filename)))
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[NewCall]")
+	}
+
+	ext := types.NewExtrinsic(c)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[NewExtrinsic]")
+	}
+
+	genesisHash, err := api.RPC.Chain.GetBlockHash(0)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[GetBlockHash]")
+	}
+
+	rv, err := api.RPC.State.GetRuntimeVersionLatest()
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[GetRuntimeVersionLatest]")
+	}
+
+	key, err := types.CreateStorageKey(meta, "System", "Account", keyring.PublicKey)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[CreateStorageKey System  Account]")
+	}
+
+	keye, err := types.CreateStorageKey(meta, "System", "Events", nil)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[CreateStorageKey System Events]")
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &accountInfo)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[GetStorageLatest]")
+	}
+	if !ok {
+		return "", configs.Code_500, errors.New("[GetStorageLatest value is empty]")
+	}
+
+	o := types.SignatureOptions{
+		BlockHash:          genesisHash,
+		Era:                types.ExtrinsicEra{IsMortalEra: false},
+		GenesisHash:        genesisHash,
+		Nonce:              types.NewUCompactFromUInt(uint64(accountInfo.Nonce)),
+		SpecVersion:        rv.SpecVersion,
+		Tip:                types.NewUCompactFromUInt(0),
+		TransactionVersion: rv.TransactionVersion,
+	}
+
+	// Sign the transaction
+	err = ext.Sign(keyring, o)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[Sign]")
+	}
+
+	// Do the transfer and track the actual status
+	sub, err := api.RPC.Author.SubmitAndWatchExtrinsic(ext)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "[SubmitAndWatchExtrinsic]")
+	}
+	defer sub.Unsubscribe()
+	timeout := time.After(configs.TimeToWaitEvents)
+	for {
+		select {
+		case status := <-sub.Chan():
+			if status.IsInBlock {
+				events := MyEventRecords{}
+				txhash := fmt.Sprintf("%#x", status.AsInBlock)
+				h, err := api.RPC.State.GetStorageRaw(keye, status.AsInBlock)
+				if err != nil {
+					return txhash, configs.Code_600, err
+				}
+
+				err = types.EventRecordsRaw(*h).DecodeEventRecords(meta, &events)
+				if err != nil {
+					Out.Sugar().Infof("[%v]Decode event err:%v", txhash, err)
+				}
+
+				for i := 0; i < len(events.FileBank_UploadDeclaration); i++ {
+					if string(events.FileBank_UploadDeclaration[i].FileHash) == filehash {
+						return txhash, configs.Code_200, nil
+					}
+				}
+				return txhash, configs.Code_600, errors.Errorf("events.FileBank_FillerUpload not found")
+			}
+		case err = <-sub.Err():
+			return "", configs.Code_500, err
+		case <-timeout:
+			return "", configs.Code_500, errors.New("Timeout")
+		}
+	}
+}
 
 // File meta information on chain
 func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, public bool, backups uint8, filesize int64, downloadfee *big.Int) error {
@@ -279,4 +395,13 @@ func GetAddressFromPrk(prk string, prefix []byte) (string, error) {
 		return "", errors.Wrap(err, "[Encode]")
 	}
 	return addr, nil
+}
+
+//
+func GetPubkeyFromPrk(prk string) ([]byte, error) {
+	keyring, err := signature.KeyringPairFromSecret(prk, 0)
+	if err != nil {
+		return nil, errors.Wrap(err, "[KeyringPairFromSecret]")
+	}
+	return keyring.PublicKey, nil
 }

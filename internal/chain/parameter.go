@@ -22,8 +22,9 @@ const (
 
 // cess chain Transaction name
 const (
-	ChainTx_FileBank_Upload     = "FileBank.upload"
-	ChainTx_FileBank_DeleteFile = "FileBank.delete_file"
+	ChainTx_FileBank_Upload            = "FileBank.upload"
+	ChainTx_FileBank_DeleteFile        = "FileBank.delete_file"
+	ChainTx_FileBank_UploadDeclaration = "FileBank.upload_declaration"
 )
 
 //---RegisterMsg

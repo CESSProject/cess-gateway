@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"io"
 	"io/ioutil"
 	"math/rand"
@@ -140,4 +141,16 @@ func CreatDirIfNotExist(dir string) error {
 		return os.MkdirAll(dir, os.ModeDir)
 	}
 	return nil
+}
+
+func CalcHash(data []byte) (string, error) {
+	if len(data) <= 0 {
+		return "", errors.New("data is nil")
+	}
+	h := sha256.New()
+	_, err := h.Write(data)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }

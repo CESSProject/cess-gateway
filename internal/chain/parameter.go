@@ -80,3 +80,8 @@ type UserStorageSpace struct {
 	Used_space      types.U128 `json:"used_space"`
 	Remaining_space types.U128 `json:"remaining_space"`
 }
+
+type UserFileList struct {
+	File_hash types.Bytes
+	File_size types.U64
+}

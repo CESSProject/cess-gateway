@@ -290,3 +290,42 @@ func GetFileMetaInfoOnChain(fid string) (FileMetaInfo, int, error) {
 	}
 	return mdata, configs.Code_200, nil
 }
+
+// Query file meta info
+func GetUserFileList(prvkey string) ([]UserFileList, int, error) {
+	var (
+		err  error
+		data []UserFileList
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+
+	keyring, err := signature.KeyringPairFromSecret(prvkey, 0)
+	if err != nil {
+		return data, configs.Code_500, errors.Wrap(err, "[KeyringPairFromSecret]")
+	}
+
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return data, configs.Code_500, errors.Wrap(err, "[GetMetadataLatest]")
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileMap_FileMetaInfo, keyring.PublicKey)
+	if err != nil {
+		return data, configs.Code_500, errors.Wrap(err, "[CreateStorageKey]")
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &data)
+	if err != nil {
+		return data, configs.Code_500, errors.Wrap(err, "[GetStorageLatest]")
+	}
+	if !ok {
+		return data, configs.Code_404, errors.New("[Not found]")
+	}
+	return data, configs.Code_200, nil
+}

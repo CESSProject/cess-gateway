@@ -43,15 +43,15 @@ type SchedulerInfo struct {
 
 //---FileMetaInfo
 type FileMetaInfo struct {
-	File_Name   types.Bytes
-	FileSize    types.U64
-	FileHash    types.Bytes
-	Public      types.Bool
-	UserAddr    types.AccountID
-	FileState   types.Bytes
-	Backups     types.U8
-	Downloadfee types.U128
-	FileDupl    []FileDuplicateInfo
+	FileSize    types.U64         `json:"File_size"`
+	BlockNum    types.U32         `json:"Block_num"`
+	ScanSize    types.U32         `json:"Scan_size"`
+	SegmentSize types.U32         `json:"Segment_size"`
+	MinerAcc    types.AccountID   `json:"Miner_acc"`
+	MinerIp     types.Bytes       `json:"Miner_ip"`
+	Users       []types.AccountID `json:"Users"`
+	Names       []types.Bytes     `json:"Names"`
+	FileState   types.Bytes       `json:"File_state"`
 }
 
 type FileDuplicateInfo struct {

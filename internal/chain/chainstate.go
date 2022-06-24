@@ -1,6 +1,7 @@
 package chain
 
 import (
+	"cess-gateway/configs"
 	. "cess-gateway/internal/logger"
 	"cess-gateway/tools"
 	"fmt"
@@ -250,4 +251,42 @@ func QuerySoldSpace() (uint64, error) {
 		return 0, nil
 	}
 	return data.Uint64(), nil
+}
+
+// Query file meta info
+func GetFileMetaInfoOnChain(fid string) (FileMetaInfo, int, error) {
+	var (
+		err   error
+		mdata FileMetaInfo
+	)
+	api := getSubstrateAPI()
+	defer func() {
+		releaseSubstrateAPI()
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("[panic] %v", err)
+		}
+	}()
+	meta, err := api.RPC.State.GetMetadataLatest()
+	if err != nil {
+		return mdata, configs.Code_500, errors.Wrap(err, "[GetMetadataLatest]")
+	}
+
+	b, err := types.EncodeToBytes(fid)
+	if err != nil {
+		return mdata, configs.Code_400, errors.Wrap(err, "[EncodeToBytes]")
+	}
+
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileMap_FileMetaInfo, b)
+	if err != nil {
+		return mdata, configs.Code_500, errors.Wrap(err, "[CreateStorageKey]")
+	}
+
+	ok, err := api.RPC.State.GetStorageLatest(key, &mdata)
+	if err != nil {
+		return mdata, configs.Code_500, errors.Wrap(err, "[GetStorageLatest]")
+	}
+	if !ok {
+		return mdata, configs.Code_404, errors.New("[Not found]")
+	}
+	return mdata, configs.Code_200, nil
 }

@@ -362,7 +362,7 @@ func uploadToStorage(fpath, mailbox, fid, fname string) {
 	}
 
 	data, code, err := WriteData2(client, configs.RpcService_Scheduler, configs.RpcMethod_auth, bob)
-	if err == nil {
+	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
@@ -386,7 +386,7 @@ func uploadToStorage(fpath, mailbox, fid, fname string) {
 	}
 	filereq.Auth = data
 	for i := 0; i < int(authreq.BlockTotal); i++ {
-		filereq.BlockIndex = uint32(i)
+		filereq.BlockIndex = uint32(i + 1)
 		f.Seek(int64(i*configs.RpcBuffer), 0)
 		n, _ = f.Read(buf)
 		filereq.FileData = buf[:n]
@@ -398,7 +398,7 @@ func uploadToStorage(fpath, mailbox, fid, fname string) {
 		}
 
 		_, _, err = WriteData2(client, configs.RpcService_Scheduler, configs.RpcMethod_WriteFile, bob)
-		if err == nil {
+		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] %v", mailbox, fpath, err)
 			return
 		}

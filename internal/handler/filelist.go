@@ -52,8 +52,8 @@ func FilelistHandler(c *gin.Context) {
 	// Parameters
 	resp.Code = http.StatusBadRequest
 	resp.Msg = Status_400_default
-	var page, size, strartIndex = 0, 0, 0
-	var defaultPage, defaultSize = true, true
+	var page, size = 0, 0
+	var showPage, showSize = 0, 30
 	sizes := c.Query("size")
 	pages := c.Query("page")
 	if pages != "" {
@@ -64,7 +64,7 @@ func FilelistHandler(c *gin.Context) {
 			return
 		}
 		if page > 0 {
-			defaultPage = false
+			showPage = page
 		}
 	}
 	if sizes != "" {
@@ -75,7 +75,10 @@ func FilelistHandler(c *gin.Context) {
 			return
 		}
 		if size > 0 {
-			defaultSize = false
+			showSize = size
+			if showSize > 1000 {
+				showSize = 1000
+			}
 		}
 	}
 	resp.Code = http.StatusInternalServerError
@@ -119,12 +122,39 @@ func FilelistHandler(c *gin.Context) {
 		}
 	}
 
-	//TODO:s
 	//Pagination display
-
 	resp.Code = http.StatusOK
 	resp.Msg = "success"
-	resp.Data = flist
+	if showSize >= len(flist) {
+		resp.Data = flist
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	//Show last page
+	if showPage == 0 {
+		resp.Data = flist[len(flist)-showSize:]
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	//Invalid page number, show last page.
+	if (showPage-1)*30 > len(flist) {
+		if len(flist) > 30 {
+			resp.Data = flist[len(flist)-30:]
+		} else {
+			resp.Data = flist
+		}
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	//Display from the specified page number.
+	if (showPage-1)*30+showSize >= len(flist) {
+		resp.Data = flist[(showPage-1)*30:]
+	} else {
+		resp.Data = flist[(showPage-1)*30 : (showPage-1)*30+showSize]
+	}
 	c.JSON(http.StatusOK, resp)
 	return
 }

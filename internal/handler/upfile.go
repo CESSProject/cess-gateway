@@ -208,14 +208,14 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 	}
 
-	err = db.Put([]byte(key), []byte{1})
+	err = db.Put([]byte(key), []byte(key_fid))
 	if err != nil {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Msg = Status_500_db
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	err = db.Put([]byte(key_fid), []byte{1})
+	err = db.Put([]byte(key_fid), []byte(key))
 	if err != nil {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Msg = Status_500_db

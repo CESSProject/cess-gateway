@@ -208,21 +208,16 @@ Response Schema: `application/json`
 - Request example
 
 ```
-curl -X PUT "url"/test.log -F 'file=@test.log' -H "Authorization: "token""
+# curl -X PUT "url"/test.log -F 'file=@test.log' -H "Authorization: "token""
+{"code":200,"msg":"success","data":"fid"}
 ```
 
 ## Download a file
 
-| **GET** /"file name" |
+| **GET** /"fid" |
 | -------------------- |
 
-The get file interface is used for get files in the CESS storage system. Currently, service only supported get files that upload by yourself.
-
-- Request Header
-
-| field         | value   |
-| ------------- | ------- |
-| Authorization |  token  |
+The get file interface is used for get files in the CESS storage system.
 
 - Responses
 
@@ -240,7 +235,7 @@ The response schema for the exception return status is: `application/json`, The 
 - Request example
 
 ```
-curl -X GET "url"/test.log -H "Authorization: "token""
+curl -X GET -L "url"/fid
 ```
 
 
@@ -248,7 +243,7 @@ curl -X GET "url"/test.log -H "Authorization: "token""
 
 The delete file interface is used for delete a put file.
 
-| **DELETE** /"file name" |
+| **DELETE** /"fid" |
 | ----------------------- |
 
 - Request Header
@@ -272,7 +267,7 @@ Response Schema: `application/json`
 - Request example
 
 ```
-curl -X DELETE "url"/test.log -H "Authorization: "token""
+curl -X DELETE "url"/"fid" -H "Authorization: "token""
 ```
 
 ## List previous operation

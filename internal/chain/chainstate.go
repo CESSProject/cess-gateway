@@ -3,7 +3,6 @@ package chain
 import (
 	"cess-gateway/configs"
 	. "cess-gateway/internal/logger"
-	"cess-gateway/tools"
 	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
@@ -175,50 +174,6 @@ func GetUserSpaceInfo(prk string) (UserStorageSpace, error) {
 	return data, nil
 }
 
-// Get file meta information on the cess chain
-func GetFilelistInfo(wallet string) ([]types.Bytes, error) {
-	var (
-		err  error
-		data []types.Bytes
-	)
-
-	api := getSubstrateAPI()
-	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
-		}
-	}()
-
-	meta, err := api.RPC.State.GetMetadataLatest()
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserFilelistInfo)
-	}
-
-	bytes, err := tools.DecodeToPub(wallet, tools.ChainCessTestPrefix)
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:DecodeToPub]", State_FileBank, FileBank_UserFilelistInfo)
-	}
-	b, err := types.EncodeToBytes(types.NewAccountID(bytes))
-	if err != nil {
-		return data, err
-	}
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserFilelistInfo, b)
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserFilelistInfo)
-	}
-
-	ok, err := api.RPC.State.GetStorageLatest(key, &data)
-	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserFilelistInfo)
-	}
-	if !ok {
-		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserFilelistInfo)
-	}
-	return data, nil
-}
-
 //Query sold space information on the cess chain
 func QuerySoldSpace() (uint64, error) {
 	var (
@@ -315,7 +270,7 @@ func GetUserFileList(prvkey string) ([]UserFileList, int, error) {
 		return data, configs.Code_500, errors.Wrap(err, "[GetMetadataLatest]")
 	}
 
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileMap_FileMetaInfo, keyring.PublicKey)
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserFilelist, keyring.PublicKey)
 	if err != nil {
 		return data, configs.Code_500, errors.Wrap(err, "[CreateStorageKey]")
 	}

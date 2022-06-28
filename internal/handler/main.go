@@ -20,7 +20,7 @@ func Main() {
 	r.GET("/:fid", DownfileHandler)
 	r.POST("/auth", GrantTokenHandler)
 	r.GET("/files", FilelistHandler)
-	r.DELETE("/:filename", DeletefileHandler)
+	r.DELETE("/:fid", DeletefileHandler)
 
 	// run
 	r.Run(configs.Confile.ServiceAddr + ":" + configs.Confile.ServicePort)

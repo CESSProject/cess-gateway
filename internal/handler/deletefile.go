@@ -6,7 +6,6 @@ import (
 	"cess-gateway/internal/db"
 	. "cess-gateway/internal/logger"
 	"cess-gateway/internal/token"
-	"cess-gateway/tools"
 	"encoding/json"
 	"net/http"
 	"time"
@@ -58,12 +57,7 @@ func DeletefileHandler(c *gin.Context) {
 		return
 	}
 
-	key, err := tools.CalcMD5(usertoken.Mailbox + fid)
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), usertoken.Mailbox, err)
-		c.JSON(http.StatusBadRequest, resp)
-		return
-	}
+	key := usertoken.Mailbox + fid
 
 	resp.Code = http.StatusInternalServerError
 	resp.Msg = Status_500_db
@@ -73,7 +67,7 @@ func DeletefileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	fname_key, err := db.Get(key)
+	fname_key, err := db.Get([]byte(key))
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
 			resp.Code = http.StatusNotFound
@@ -95,7 +89,7 @@ func DeletefileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	db.Delete(key)
+	db.Delete([]byte(key))
 	db.Delete(fname_key)
 	resp.Code = http.StatusOK
 	resp.Msg = "success"

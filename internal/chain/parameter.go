@@ -12,12 +12,12 @@ const (
 
 // cess chain module method
 const (
-	FileMap_FileMetaInfo      = "File"
-	FileMap_SchedulerInfo     = "SchedulerMap"
-	FileBank_UserSpaceList    = "UserSpaceList"
-	FileBank_UserSpaceInfo    = "UserHoldSpaceDetails"
-	FileBank_UserFilelistInfo = "UserHoldFileList"
-	Sminer_PurchasedSpace     = "PurchasedSpace"
+	FileMap_FileMetaInfo   = "File"
+	FileMap_SchedulerInfo  = "SchedulerMap"
+	FileBank_UserSpaceList = "UserSpaceList"
+	FileBank_UserSpaceInfo = "UserHoldSpaceDetails"
+	FileBank_UserFilelist  = "UserHoldFileList"
+	Sminer_PurchasedSpace  = "PurchasedSpace"
 )
 
 // cess chain Transaction name
@@ -43,6 +43,7 @@ type SchedulerInfo struct {
 
 //---FileMetaInfo
 type FileMetaInfo struct {
+	MinerId     types.U64         `json:"Miner_id"`
 	FileSize    types.U64         `json:"File_size"`
 	BlockNum    types.U32         `json:"Block_num"`
 	ScanSize    types.U32         `json:"Scan_size"`
@@ -54,21 +55,6 @@ type FileMetaInfo struct {
 	FileState   types.Bytes       `json:"File_state"`
 }
 
-type FileDuplicateInfo struct {
-	MinerId   types.U64
-	BlockNum  types.U32
-	ScanSize  types.U32
-	Acc       types.AccountID
-	MinerIp   types.Bytes
-	DuplId    types.Bytes
-	RandKey   types.Bytes
-	BlockInfo []BlockInfo
-}
-type BlockInfo struct {
-	BlockIndex types.Bytes
-	BlockSize  types.U32
-}
-
 //---UserInfo
 type UserSpaceListInfo struct {
 	Size     types.U128 `json:"size"`
@@ -76,9 +62,9 @@ type UserSpaceListInfo struct {
 }
 
 type UserStorageSpace struct {
-	Purchased_space types.U128 `json:"purchased_space"`
-	Used_space      types.U128 `json:"used_space"`
-	Remaining_space types.U128 `json:"remaining_space"`
+	Purchased_space types.U128
+	Used_space      types.U128
+	Remaining_space types.U128
 }
 
 type UserFileList struct {

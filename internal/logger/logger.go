@@ -14,6 +14,7 @@ import (
 var (
 	Err  *zap.Logger
 	Out  *zap.Logger
+	Uld  *zap.Logger
 	path string
 )
 
@@ -45,6 +46,7 @@ func init() {
 	}
 	initOutLogger()
 	initErrLogger()
+	initUldLogger()
 }
 
 // out log
@@ -113,6 +115,40 @@ func initErrLogger() {
 	development := zap.Development()
 	Err = zap.New(core, caller, development)
 	Err.Sugar().Errorf("The service has started and created a log file in the %v", errlogpath)
+}
+
+// out log
+func initUldLogger() {
+	uldlogpath := path + "/uld.log"
+	hook := lumberjack.Logger{
+		Filename:   uldlogpath,
+		MaxSize:    10,  //MB
+		MaxAge:     365, //Day
+		MaxBackups: 0,
+		LocalTime:  true,
+		Compress:   true,
+	}
+	encoderConfig := zapcore.EncoderConfig{
+		MessageKey:   "msg",
+		TimeKey:      "time",
+		CallerKey:    "file",
+		LineEnding:   zapcore.DefaultLineEnding,
+		EncodeLevel:  zapcore.LowercaseLevelEncoder,
+		EncodeTime:   formatEncodeTime,
+		EncodeCaller: zapcore.ShortCallerEncoder,
+	}
+	atomicLevel := zap.NewAtomicLevel()
+	atomicLevel.SetLevel(zap.InfoLevel)
+	var writes = []zapcore.WriteSyncer{zapcore.AddSync(&hook)}
+	core := zapcore.NewCore(
+		zapcore.NewJSONEncoder(encoderConfig),
+		zapcore.NewMultiWriteSyncer(writes...),
+		atomicLevel,
+	)
+	caller := zap.AddCaller()
+	development := zap.Development()
+	Uld = zap.New(core, caller, development)
+	Uld.Sugar().Errorf("The service has started and created a log file in the %v", uldlogpath)
 }
 
 func formatEncodeTime(t time.Time, enc zapcore.PrimitiveArrayEncoder) {

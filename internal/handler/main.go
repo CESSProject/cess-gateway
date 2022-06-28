@@ -12,15 +12,15 @@ func Main() {
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowMethods = []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}
-	config.AddAllowHeaders("Authorization")
+	config.AddAllowHeaders("Authorization", "*")
 	r.Use(cors.New(config))
 
 	// handler
 	r.PUT("/:filename", UpfileHandler)
-	r.GET("/:filename", DownfileHandler)
+	r.GET("/:fid", DownfileHandler)
 	r.POST("/auth", GrantTokenHandler)
 	r.GET("/files", FilelistHandler)
-	r.DELETE("/:filename", DeletefileHandler)
+	r.DELETE("/:fid", DeletefileHandler)
 
 	// run
 	r.Run(configs.Confile.ServiceAddr + ":" + configs.Confile.ServicePort)

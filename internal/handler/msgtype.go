@@ -18,6 +18,7 @@ const (
 	Status_401_expired = "token expired"
 
 	//403
+	Status_403_default        = "Forbidden"
 	Status_403_NotEnoughSpace = "not enough space"
 	Status_403_dufilename     = "duplicate filename"
 	Status_403_hotbackup      = "The file is in hot backup, please try again later."

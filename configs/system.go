@@ -33,11 +33,15 @@ const (
 
 	//
 	SIZE_1GB = 1024 * 1024 * 1024
+	SIZE_1MB = 1024 * 1024
+	SIZE_1KB = 1024
 )
 
 const (
 	//Scheduler's rpc service name
 	RpcService_Scheduler = "wservice"
+	//Scheduler's rpc service name
+	RpcService_Miner = "mservice"
 	//auth method of rpc service
 	RpcMethod_auth = "auth"
 	//write method of rpc service

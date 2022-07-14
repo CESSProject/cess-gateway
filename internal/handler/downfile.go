@@ -82,7 +82,6 @@ func DownfileHandler(c *gin.Context) {
 	}
 	r := len(fmeta.ChunkInfo) / 3
 	d := len(fmeta.ChunkInfo) - r
-	fmt.Println(d, " -- ", r)
 	err = fileHandling.ReedSolomon_Restore(configs.FileCacheDir, fid, d, r)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] ReedSolomon_Restore: %v", c.ClientIP(), err)
@@ -109,7 +108,7 @@ func downloadFromStorage(fpath string, mip string) error {
 	var client *rpc.Client
 
 	wsURL := "ws://" + string(base58.Decode(mip))
-	fmt.Println(wsURL)
+
 	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 	client, err = rpc.DialWebsocket(ctx, wsURL, "")
 	if err != nil {
@@ -118,7 +117,7 @@ func downloadFromStorage(fpath string, mip string) error {
 
 	var wantfile rpc.FileDownloadReq
 	fname := filepath.Base(fpath)
-	fmt.Println(fname)
+
 	wantfile.FileId = fmt.Sprintf("%v", fname)
 	wantfile.BlockIndex = 1
 

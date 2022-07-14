@@ -44,6 +44,7 @@ type SchedulerInfo struct {
 //---FileMetaInfo
 type FileMetaInfo struct {
 	FileSize  types.U64
+	Index     types.U32
 	FileState types.Bytes
 	Users     []types.AccountID
 	Names     []types.Bytes

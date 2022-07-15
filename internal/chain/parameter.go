@@ -43,16 +43,21 @@ type SchedulerInfo struct {
 
 //---FileMetaInfo
 type FileMetaInfo struct {
-	MinerId     types.U64         `json:"Miner_id"`
-	FileSize    types.U64         `json:"File_size"`
-	BlockNum    types.U32         `json:"Block_num"`
-	ScanSize    types.U32         `json:"Scan_size"`
-	SegmentSize types.U32         `json:"Segment_size"`
-	MinerAcc    types.AccountID   `json:"Miner_acc"`
-	MinerIp     types.Bytes       `json:"Miner_ip"`
-	Users       []types.AccountID `json:"Users"`
-	Names       []types.Bytes     `json:"Names"`
-	FileState   types.Bytes       `json:"File_state"`
+	FileSize  types.U64
+	Index     types.U32
+	FileState types.Bytes
+	Users     []types.AccountID
+	Names     []types.Bytes
+	ChunkInfo []ChunkInfo
+}
+
+type ChunkInfo struct {
+	MinerId   types.U64
+	ChunkSize types.U64
+	BlockNum  types.U32
+	ChunkId   types.Bytes
+	MinerIp   types.Bytes
+	MinerAcc  types.AccountID
 }
 
 //---UserInfo

@@ -23,5 +23,5 @@ func Main() {
 	r.DELETE("/:fid", DeletefileHandler)
 
 	// run
-	r.Run(configs.Confile.ServiceAddr + ":" + configs.Confile.ServicePort)
+	r.Run(":" + configs.Confile.ServicePort)
 }

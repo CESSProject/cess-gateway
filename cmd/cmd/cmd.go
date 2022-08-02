@@ -47,6 +47,7 @@ func init() {
 		Command_Run(),
 		Command_BuySpace(),
 		Command_UpgradePackage(),
+		Command_Renewal(),
 	)
 	rootCmd.PersistentFlags().StringVarP(&configs.ConfigFilePath, "config", "c", "", "Custom profile")
 }
@@ -83,7 +84,7 @@ func Command_Run() *cobra.Command {
 
 func Command_BuySpace() *cobra.Command {
 	cc := &cobra.Command{
-		Use:                   "buy_package",
+		Use:                   "buy",
 		Short:                 "Buy space packages:[1, 2, 3, 4, 5]",
 		Run:                   Command_BuySpace_Runfunc,
 		DisableFlagsInUseLine: true,
@@ -93,9 +94,19 @@ func Command_BuySpace() *cobra.Command {
 
 func Command_UpgradePackage() *cobra.Command {
 	cc := &cobra.Command{
-		Use:                   "upgrade_package",
+		Use:                   "upgrade",
 		Short:                 "Upgrade a small package to a large package",
 		Run:                   Command_UpgradePackage_Runfunc,
+		DisableFlagsInUseLine: true,
+	}
+	return cc
+}
+
+func Command_Renewal() *cobra.Command {
+	cc := &cobra.Command{
+		Use:                   "renewal",
+		Short:                 "One-month lease term for additional space package",
+		Run:                   Command_Renewal_Runfunc,
 		DisableFlagsInUseLine: true,
 	}
 	return cc
@@ -161,7 +172,7 @@ func Command_BuySpace_Runfunc(cmd *cobra.Command, args []string) {
 	}
 	refreshProfile(cmd)
 	logger.Log_Init()
-	txhash, err := chain.BuySpace(types.U8(p_type), count)
+	txhash, err := chain.BuySpacePackage(types.U8(p_type), count)
 	if txhash == "" {
 		log.Printf("[err] Failed purchase: %v\n", err)
 		os.Exit(1)
@@ -205,12 +216,26 @@ func Command_UpgradePackage_Runfunc(cmd *cobra.Command, args []string) {
 	}
 	refreshProfile(cmd)
 	logger.Log_Init()
-	txhash, err := chain.BuySpace(types.U8(p_type), count)
+	txhash, err := chain.UpgradeSpacePackage(types.U8(p_type), count)
 	if txhash == "" {
 		log.Printf("[err] Upgrade package failed: %v\n", err)
 		os.Exit(1)
 	}
 	logger.Out.Sugar().Infof("Upgrade package successfully: %v", txhash)
+	log.Printf("[ok] success\n")
+	os.Exit(0)
+}
+
+// Increase space package lease term
+func Command_Renewal_Runfunc(cmd *cobra.Command, args []string) {
+	refreshProfile(cmd)
+	logger.Log_Init()
+	txhash, err := chain.Renewal()
+	if txhash == "" {
+		log.Printf("[err] Renewal package failed: %v\n", err)
+		os.Exit(1)
+	}
+	logger.Out.Sugar().Infof("Renewal package successfully: %v", txhash)
 	log.Printf("[ok] success\n")
 	os.Exit(0)
 }

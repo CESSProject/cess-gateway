@@ -9,6 +9,9 @@ import (
 	"github.com/spf13/viper"
 )
 
+// type and version
+const VERSION = "CESS-Gateway v0.1.2.220802.1632"
+
 type Configfile struct {
 	RpcAddr       string `toml:"RpcAddr"`
 	ServiceAddr   string `toml:"ServiceAddr"`
@@ -21,6 +24,7 @@ type Configfile struct {
 }
 
 var Confile = new(Configfile)
+var ConfigFilePath string
 
 func ParseConfile() error {
 	f, err := os.Stat("conf.toml")
@@ -51,3 +55,20 @@ func ParseConfile() error {
 
 	return nil
 }
+
+const ConfigFile_Templete = `#The rpc address of the chain node
+RpcAddr           = ""
+#The ip address that the cess-gateway service listens to
+ServiceAddr       = ""
+#The port number on which the cess-gateway service listens
+ServicePort       = ""
+#Phrase or seed of for wallet account
+AccountSeed       = ""
+#Email address
+EmailAddress      = ""
+#Email authorization code
+AuthorizationCode = ""
+#Outgoing server address of SMTP service
+EmailHost         = ""
+#Outgoing server port number of SMTP service
+EmailHostPort     = 0`

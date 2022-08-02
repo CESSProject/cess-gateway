@@ -2,17 +2,14 @@ package main
 
 import (
 	"cess-gateway/configs"
-	"cess-gateway/internal/chain"
-	"cess-gateway/internal/handler"
 	"cess-gateway/tools"
 	"flag"
 
 	"fmt"
 	"os"
-)
 
-// version
-const VERSION = "CESS-Gateway v0.1.2.220802.1632"
+	"cess-gateway/cmd/cmd"
+)
 
 var printVersion bool
 
@@ -53,7 +50,8 @@ func init() {
 
 // Program entry
 func main() {
-	chain.Init()
-	//start-up
-	handler.Main()
+	// chain.Init()
+	// //start-up
+	// handler.Main()
+	cmd.Execute()
 }

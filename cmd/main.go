@@ -12,7 +12,7 @@ import (
 )
 
 // version
-const VERSION = "CESS-Gateway v0.1.2"
+const VERSION = "CESS-Gateway v0.1.2.220802.1632"
 
 var printVersion bool
 

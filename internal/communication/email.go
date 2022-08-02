@@ -11,7 +11,7 @@ func SendPlainMail(host string, port int, from, passwd string, to []string, subj
 	m.SetHeader("To", to...)
 	m.SetAddressHeader("From", from, "")
 	// "text/html","text/plain"
-	m.SetBody("text/plain", body)
+	m.SetBody("text/html", body)
 
 	return gomail.NewPlainDialer(host, port, from, passwd).DialAndSend(m)
 }

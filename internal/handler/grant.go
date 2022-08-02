@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"bufio"
+	"bytes"
 	"cess-gateway/configs"
 	"cess-gateway/internal/communication"
 	"cess-gateway/internal/db"
@@ -9,6 +11,7 @@ import (
 	"cess-gateway/tools"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -38,7 +41,7 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 
-	// Check if the email format is correct
+	// Check email format
 	if !tools.VerifyMailboxFormat(reqmsg.Mailbox) {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
 		resp.Msg = Status_400_EmailFormat
@@ -54,7 +57,7 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	bytes, err := db.Get([]byte(reqmsg.Mailbox))
+	data_byte, err := db.Get([]byte(reqmsg.Mailbox))
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
 			captcha := tools.RandomInRange(100000, 999999)
@@ -66,10 +69,13 @@ func GrantTokenHandler(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
-			// Send verification code to email
-			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
-			body += fmt.Sprintf("%v", captcha)
-			body += "\nValidity: 5 minutes"
+			var mail_s string
+			b := bytes.NewBuffer(make([]byte, 0))
+			bw := bufio.NewWriter(b)
+			tpl := template.Must(template.New("tplName").Parse(content_captcha))
+			tpl.Execute(bw, map[string]interface{}{"Captcha": captcha})
+			bw.Flush()
+			mail_s = fmt.Sprintf("%s", b)
 			err = communication.SendPlainMail(
 				configs.Confile.EmailHost,
 				configs.Confile.EmailHostPort,
@@ -77,13 +83,13 @@ func GrantTokenHandler(c *gin.Context) {
 				configs.Confile.EmailPassword,
 				[]string{reqmsg.Mailbox},
 				configs.EmailSubject_captcha,
-				body,
+				mail_s,
 			)
 			if err != nil {
+				db.Delete([]byte(reqmsg.Mailbox))
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
-				resp.Code = http.StatusBadRequest
-				resp.Msg = Status_400_EmailSmpt
-				c.JSON(http.StatusBadRequest, resp)
+				resp.Msg = Status_500_EmailSend
+				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
 			resp.Code = http.StatusOK
@@ -96,7 +102,7 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	v := strings.Split(string(bytes), "#")
+	v := strings.Split(string(data_byte), "#")
 	if len(v) == 2 {
 		vi, err := strconv.ParseInt(v[1], 10, 64)
 		if err != nil {
@@ -116,10 +122,13 @@ func GrantTokenHandler(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
-			// Send verification code to email
-			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
-			body += fmt.Sprintf("%v", captcha)
-			body += "\nvalidity: 5 minutes"
+			var mail_s string
+			b := bytes.NewBuffer(make([]byte, 0))
+			bw := bufio.NewWriter(b)
+			tpl := template.Must(template.New("tplName").Parse(content_captcha))
+			tpl.Execute(bw, map[string]interface{}{"Captcha": captcha})
+			bw.Flush()
+			mail_s = fmt.Sprintf("%s", b)
 			err = communication.SendPlainMail(
 				configs.Confile.EmailHost,
 				configs.Confile.EmailHostPort,
@@ -127,13 +136,14 @@ func GrantTokenHandler(c *gin.Context) {
 				configs.Confile.EmailPassword,
 				[]string{reqmsg.Mailbox},
 				configs.EmailSubject_captcha,
-				body,
+				mail_s,
 			)
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+				db.Delete([]byte(reqmsg.Mailbox))
 				resp.Code = http.StatusBadRequest
-				resp.Msg = Status_400_EmailSmpt
-				c.JSON(http.StatusBadRequest, resp)
+				resp.Msg = Status_500_EmailSend
+				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
 
@@ -170,8 +180,13 @@ func GrantTokenHandler(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
-		body := "Hello, " + reqmsg.Mailbox + "!\nCongratulations on your successful authentication, your token is:\n"
-		body += usertoken
+		var mail_s string
+		b := bytes.NewBuffer(make([]byte, 0))
+		bw := bufio.NewWriter(b)
+		tpl := template.Must(template.New("tplName").Parse(content_token))
+		tpl.Execute(bw, map[string]interface{}{"Token": usertoken})
+		bw.Flush()
+		mail_s = fmt.Sprintf("%s", b)
 		err = communication.SendPlainMail(
 			configs.Confile.EmailHost,
 			configs.Confile.EmailHostPort,
@@ -179,13 +194,13 @@ func GrantTokenHandler(c *gin.Context) {
 			configs.Confile.EmailPassword,
 			[]string{reqmsg.Mailbox},
 			configs.EmailSubject_token,
-			body,
+			mail_s,
 		)
 		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
-			resp.Code = http.StatusBadRequest
-			resp.Msg = Status_400_EmailSmpt
-			c.JSON(http.StatusBadRequest, resp)
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = Status_500_EmailSend
+			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
 		resp.Code = http.StatusOK
@@ -194,7 +209,7 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 
-	b, err := token.DecryptToken(string(bytes))
+	b, err := token.DecryptToken(string(data_byte))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 		resp.Msg = Status_500_unexpected
@@ -237,8 +252,12 @@ func GrantTokenHandler(c *gin.Context) {
 	resp.Data = "token=" + newtoken
 	c.JSON(http.StatusOK, resp)
 
-	bodys := "Hello, " + reqmsg.Mailbox + "!\nYour new token is as follows:\n"
-	bodys += newtoken
+	bs := bytes.NewBuffer(make([]byte, 0))
+	bw := bufio.NewWriter(bs)
+	tpl := template.Must(template.New("tplName").Parse(content_token))
+	tpl.Execute(bw, map[string]interface{}{"Token": newtoken})
+	bw.Flush()
+	mail_s := fmt.Sprintf("%s", b)
 	err = communication.SendPlainMail(
 		configs.Confile.EmailHost,
 		configs.Confile.EmailHostPort,
@@ -246,7 +265,7 @@ func GrantTokenHandler(c *gin.Context) {
 		configs.Confile.EmailPassword,
 		[]string{reqmsg.Mailbox},
 		configs.EmailSubject_token,
-		bodys,
+		mail_s,
 	)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)

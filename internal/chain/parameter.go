@@ -25,6 +25,7 @@ const (
 	ChainTx_FileBank_Upload            = "FileBank.upload"
 	ChainTx_FileBank_DeleteFile        = "FileBank.delete_file"
 	ChainTx_FileBank_UploadDeclaration = "FileBank.upload_declaration"
+	ChainTx_FileBank_BuyPackage        = "FileBank.buy_package"
 )
 
 //---RegisterMsg

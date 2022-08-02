@@ -2,15 +2,18 @@ package cmd
 
 import (
 	"cess-gateway/configs"
+	"cess-gateway/internal/chain"
 	"cess-gateway/internal/handler"
 	"cess-gateway/internal/logger"
 	"cess-gateway/tools"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -42,6 +45,7 @@ func init() {
 		Command_Default(),
 		Command_Version(),
 		Command_Run(),
+		Command_BuySpace(),
 	)
 	rootCmd.PersistentFlags().StringVarP(&configs.ConfigFilePath, "config", "c", "", "Custom profile")
 }
@@ -76,6 +80,16 @@ func Command_Run() *cobra.Command {
 	return cc
 }
 
+func Command_BuySpace() *cobra.Command {
+	cc := &cobra.Command{
+		Use:                   "buy_space",
+		Short:                 "Buy space packages:[1, 2, 3, 4, 5]",
+		Run:                   Command_BuySpace_Runfunc,
+		DisableFlagsInUseLine: true,
+	}
+	return cc
+}
+
 // Print version number and exit
 func Command_Version_Runfunc(cmd *cobra.Command, args []string) {
 	fmt.Println(configs.VERSION)
@@ -100,6 +114,50 @@ func Command_Run_Runfunc(cmd *cobra.Command, args []string) {
 	refreshProfile(cmd)
 	logger.Log_Init()
 	handler.Main()
+}
+
+// buy space package
+func Command_BuySpace_Runfunc(cmd *cobra.Command, args []string) {
+	if len(os.Args) < 3 {
+		log.Println("[err] Please enter the correct package type: [1,2,3,4,5]")
+		os.Exit(1)
+	}
+	count := types.NewU128(*big.NewInt(0))
+	p_type, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		log.Println("[err] Please enter the correct package type: [1,2,3,4,5]")
+		os.Exit(1)
+	}
+	if p_type < 1 || p_type > 5 {
+		log.Println("[err] Please enter the correct package type: [1,2,3,4,5]")
+		os.Exit(1)
+	}
+	if p_type == 5 {
+		if len(os.Args) < 4 {
+			log.Println("[err] Please enter the purchased space size (unit: TB)")
+			os.Exit(1)
+		}
+		si, err := strconv.ParseUint(os.Args[3], 10, 64)
+		if err != nil {
+			log.Println("[err] Please enter a number greater than 5")
+			os.Exit(1)
+		}
+		if si < 5 {
+			log.Println("[err] Please enter a number greater than 5")
+			os.Exit(1)
+		}
+		count.SetUint64(si)
+	}
+	refreshProfile(cmd)
+	logger.Log_Init()
+	txhash, err := chain.BuySpace(types.U8(p_type), count)
+	if txhash == "" {
+		log.Printf("[err] Failed purchase: %v\n", err)
+		os.Exit(1)
+	}
+	logger.Out.Sugar().Infof("Space purchased successfully: %v", txhash)
+	log.Printf("[ok] success\n")
+	os.Exit(0)
 }
 
 func refreshProfile(cmd *cobra.Command) {

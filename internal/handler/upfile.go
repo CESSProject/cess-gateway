@@ -114,7 +114,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountSeed)
+	spaceInfo, err := chain.GetUserSpaceInfo(configs.C.AccountSeed)
 	if err != nil {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError
@@ -201,7 +201,7 @@ func UpfileHandler(c *gin.Context) {
 
 	key_fid := usertoken.Mailbox + fileid
 
-	txhash, _, err := chain.UploadDeclaration(configs.Confile.AccountSeed, fileid, filename)
+	txhash, _, err := chain.UploadDeclaration(configs.C.AccountSeed, fileid, filename)
 	if txhash == "" {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Msg = Status_500_db
@@ -282,7 +282,7 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 	if fstat.Size()%configs.RpcBuffer != 0 {
 		authreq.BlockTotal += 1
 	}
-	authreq.PublicKey, err = chain.GetPubkeyFromPrk(configs.Confile.AccountSeed)
+	authreq.PublicKey, err = chain.GetPubkeyFromPrk(configs.C.AccountSeed)
 	if err != nil {
 		ch <- 1
 		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
@@ -290,7 +290,7 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 	}
 
 	authreq.Msg = []byte(tools.GetRandomcode(16))
-	kr, _ := cesskeyring.FromURI(configs.Confile.AccountSeed, cesskeyring.NetSubstrate{})
+	kr, _ := cesskeyring.FromURI(configs.C.AccountSeed, cesskeyring.NetSubstrate{})
 	// sign message
 	sign, err := kr.Sign(kr.SigningContext(authreq.Msg))
 	if err != nil {

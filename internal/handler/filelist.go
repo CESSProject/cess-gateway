@@ -84,7 +84,7 @@ func FilelistHandler(c *gin.Context) {
 	resp.Code = http.StatusInternalServerError
 	resp.Msg = Status_500_unexpected
 	//query all file meta
-	filelist, code, _ := chain.GetUserFileList(configs.Confile.AccountSeed)
+	filelist, code, _ := chain.GetUserFileList(configs.C.AccountSeed)
 	if code != configs.Code_200 {
 		if code == configs.Code_404 {
 			resp.Code = http.StatusOK

@@ -2,6 +2,9 @@ package configs
 
 import "time"
 
+// type and version
+const VERSION = "CESS-Gateway v0.1.2.220802.1951"
+
 const (
 	// base dir
 	BaseDir = "/usr/local/cess-gateway"

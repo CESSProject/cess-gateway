@@ -2,13 +2,17 @@ package cmd
 
 import (
 	"cess-gateway/configs"
+	"cess-gateway/internal/handler"
+	"cess-gateway/internal/logger"
 	"cess-gateway/tools"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -37,9 +41,7 @@ func init() {
 	rootCmd.AddCommand(
 		Command_Default(),
 		Command_Version(),
-		Command_Register(),
 		Command_Run(),
-		Command_Update(),
 	)
 	rootCmd.PersistentFlags().StringVarP(&configs.ConfigFilePath, "config", "c", "", "Custom profile")
 }
@@ -59,26 +61,6 @@ func Command_Default() *cobra.Command {
 		Use:                   "default",
 		Short:                 "Generate profile template",
 		Run:                   Command_Default_Runfunc,
-		DisableFlagsInUseLine: true,
-	}
-	return cc
-}
-
-func Command_Register() *cobra.Command {
-	cc := &cobra.Command{
-		Use:                   "register",
-		Short:                 "Register scheduler information to the chain",
-		Run:                   Command_Register_Runfunc,
-		DisableFlagsInUseLine: true,
-	}
-	return cc
-}
-
-func Command_Update() *cobra.Command {
-	cc := &cobra.Command{
-		Use:                   "update <ip> <port>",
-		Short:                 "Update scheduling service ip and port",
-		Run:                   Command_Update_Runfunc,
 		DisableFlagsInUseLine: true,
 	}
 	return cc
@@ -111,4 +93,113 @@ func Command_Default_Runfunc(cmd *cobra.Command, args []string) {
 	path := filepath.Join(pwd, "conf_template.toml")
 	log.Printf("[ok] %v\n", path)
 	os.Exit(0)
+}
+
+// start service
+func Command_Run_Runfunc(cmd *cobra.Command, args []string) {
+	refreshProfile(cmd)
+	logger.Log_Init()
+	handler.Main()
+}
+
+func refreshProfile(cmd *cobra.Command) {
+	configpath1, _ := cmd.Flags().GetString("config")
+	configpath2, _ := cmd.Flags().GetString("c")
+	if configpath1 != "" {
+		configs.ConfigFilePath = configpath1
+	} else {
+		configs.ConfigFilePath = configpath2
+	}
+	parseProfile()
+}
+
+func parseProfile() {
+	var (
+		err          error
+		confFilePath string
+	)
+	if configs.ConfigFilePath == "" {
+		confFilePath = "./conf.toml"
+	} else {
+		confFilePath = configs.ConfigFilePath
+	}
+	f, err := os.Stat(confFilePath)
+	if err != nil {
+		log.Printf("[err] The '%v' file does not exist.\n", confFilePath)
+		os.Exit(1)
+	}
+	if f.IsDir() {
+		log.Printf("[err] The '%v' is not a file.\n", confFilePath)
+		os.Exit(1)
+	}
+
+	viper.SetConfigFile(confFilePath)
+	viper.SetConfigType("toml")
+
+	err = viper.ReadInConfig()
+	if err != nil {
+		log.Printf("[err] The '%v' file type error.\n", 41, confFilePath)
+		os.Exit(1)
+	}
+
+	err = viper.Unmarshal(configs.C)
+	if err != nil {
+		log.Printf("[err] Configuration file error, please use the default command to generate a template.\n", 41, confFilePath)
+		os.Exit(1)
+	}
+
+	if configs.C.RpcAddr == "" ||
+		configs.C.AccountSeed == "" ||
+		configs.C.EmailAddress == "" ||
+		configs.C.AuthorizationCode == "" ||
+		configs.C.SMTPHost == "" {
+		log.Printf("[err] The configuration file cannot have empty entries.\n")
+		os.Exit(1)
+	}
+
+	if !tools.VerifyMailboxFormat(configs.C.EmailAddress) {
+		fmt.Printf("[err] '%v' email format error\n", 41, configs.C.EmailAddress)
+		os.Exit(1)
+	}
+
+	port, err := strconv.Atoi(configs.C.ServicePort)
+	if err != nil {
+		log.Printf("[err] Please fill in the correct 'ServicePort'.\n")
+		os.Exit(1)
+	}
+	if port < 1024 {
+		log.Printf("[err] Prohibit the use of system reserved port: %v.\n", port)
+		os.Exit(1)
+	}
+	if port > 65535 {
+		log.Printf("[err] The 'ServicePort' cannot exceed 65535.\n")
+		os.Exit(1)
+	}
+
+	//
+	if configs.C.SMTPPort <= 0 {
+		log.Printf("[err] The 'SMTPPort' is invalid.\n")
+		os.Exit(1)
+	}
+
+	//
+	if err := tools.CreatDirIfNotExist(configs.BaseDir); err != nil {
+		log.Printf("[err] %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.LogfileDir); err != nil {
+		log.Printf("[err] %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.DbDir); err != nil {
+		log.Printf("[err] %v\n", err)
+		os.Exit(1)
+	}
+
+	if err := tools.CreatDirIfNotExist(configs.FileCacheDir); err != nil {
+		log.Printf("[err] %v\n", err)
+		os.Exit(1)
+	}
 }

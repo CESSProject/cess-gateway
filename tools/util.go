@@ -8,11 +8,13 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -167,4 +169,12 @@ func WriteStringtoFile(content, fileName string) error {
 		return err
 	}
 	return nil
+}
+
+func RecoverError(err interface{}) string {
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "%v\n", "--------------------panic--------------------")
+	fmt.Fprintf(buf, "%v\n", err)
+	fmt.Fprintf(buf, "%v\n", string(debug.Stack()))
+	return buf.String()
 }

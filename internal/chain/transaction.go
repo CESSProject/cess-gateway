@@ -19,11 +19,13 @@ func UploadDeclaration(transactionPrK, filehash, filename string) (string, int, 
 		err         error
 		accountInfo types.AccountInfo
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return "", configs.Code_500, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
 		if err := recover(); err != nil {
-			Err.Sugar().Errorf("[panic]: %v", err)
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 	keyring, err := signature.KeyringPairFromSecret(transactionPrK, 0)
@@ -134,12 +136,13 @@ func FileMetaInfoOnChain(phrase, userwallet, filename, fileid, filehash string, 
 		err         error
 		accountInfo types.AccountInfo
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic]: %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 	keyring, err := signature.KeyringPairFromSecret(phrase, 0)
@@ -267,12 +270,13 @@ func DeleteFileOnChain(phrase, fileid string) error {
 		err         error
 		accountInfo types.AccountInfo
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic]: %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 	keyring, err := signature.KeyringPairFromSecret(phrase, 0)

@@ -77,10 +77,10 @@ func GrantTokenHandler(c *gin.Context) {
 			bw.Flush()
 			mail_s = fmt.Sprintf("%s", b)
 			err = communication.SendPlainMail(
-				configs.Confile.EmailHost,
-				configs.Confile.EmailHostPort,
-				configs.Confile.EmailAddress,
-				configs.Confile.EmailPassword,
+				configs.C.SMTPHost,
+				configs.C.SMTPPort,
+				configs.C.EmailAddress,
+				configs.C.AuthorizationCode,
 				[]string{reqmsg.Mailbox},
 				configs.EmailSubject_captcha,
 				mail_s,
@@ -130,10 +130,10 @@ func GrantTokenHandler(c *gin.Context) {
 			bw.Flush()
 			mail_s = fmt.Sprintf("%s", b)
 			err = communication.SendPlainMail(
-				configs.Confile.EmailHost,
-				configs.Confile.EmailHostPort,
-				configs.Confile.EmailAddress,
-				configs.Confile.EmailPassword,
+				configs.C.SMTPHost,
+				configs.C.SMTPPort,
+				configs.C.EmailAddress,
+				configs.C.AuthorizationCode,
 				[]string{reqmsg.Mailbox},
 				configs.EmailSubject_captcha,
 				mail_s,
@@ -188,10 +188,10 @@ func GrantTokenHandler(c *gin.Context) {
 		bw.Flush()
 		mail_s = fmt.Sprintf("%s", b)
 		err = communication.SendPlainMail(
-			configs.Confile.EmailHost,
-			configs.Confile.EmailHostPort,
-			configs.Confile.EmailAddress,
-			configs.Confile.EmailPassword,
+			configs.C.SMTPHost,
+			configs.C.SMTPPort,
+			configs.C.EmailAddress,
+			configs.C.AuthorizationCode,
 			[]string{reqmsg.Mailbox},
 			configs.EmailSubject_token,
 			mail_s,
@@ -259,10 +259,10 @@ func GrantTokenHandler(c *gin.Context) {
 	bw.Flush()
 	mail_s := fmt.Sprintf("%s", b)
 	err = communication.SendPlainMail(
-		configs.Confile.EmailHost,
-		configs.Confile.EmailHostPort,
-		configs.Confile.EmailAddress,
-		configs.Confile.EmailPassword,
+		configs.C.SMTPHost,
+		configs.C.SMTPPort,
+		configs.C.EmailAddress,
+		configs.C.AuthorizationCode,
 		[]string{reqmsg.Mailbox},
 		configs.EmailSubject_token,
 		mail_s,

@@ -18,7 +18,7 @@ var (
 	path string
 )
 
-func init() {
+func Log_Init() {
 	f, err := os.Stat(configs.LogfileDir)
 	if err != nil {
 		err = os.MkdirAll(configs.LogfileDir, os.ModeDir)

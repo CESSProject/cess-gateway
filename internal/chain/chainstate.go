@@ -3,6 +3,7 @@ package chain
 import (
 	"cess-gateway/configs"
 	. "cess-gateway/internal/logger"
+	"cess-gateway/tools"
 	"fmt"
 
 	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
@@ -16,30 +17,31 @@ func GetSchedulerInfo() ([]SchedulerInfo, error) {
 		err  error
 		data []SchedulerInfo
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
-		return nil, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileMap, FileMap_SchedulerInfo)
+		return nil, errors.Wrap(err, "[%v.%v:GetMetadataLatest]")
 	}
 
 	key, err := types.CreateStorageKey(meta, State_FileMap, FileMap_SchedulerInfo)
 	if err != nil {
-		return nil, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileMap, FileMap_SchedulerInfo)
+		return nil, errors.Wrap(err, "[%v.%v:CreateStorageKey]")
 	}
 
 	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return nil, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileMap, FileMap_SchedulerInfo)
+		return nil, errors.Wrap(err, "[%v.%v:GetStorageLatest]")
 	}
 	if !ok {
-		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileMap, FileMap_SchedulerInfo)
+		return data, errors.New("Not found")
 	}
 	return data, nil
 }
@@ -51,12 +53,13 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 		data FileMetaInfo
 	)
 
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return data, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 
@@ -91,12 +94,13 @@ func GetSpaceDetailsInfo(prk string) ([]UserSpaceListInfo, error) {
 		data []UserSpaceListInfo
 	)
 
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return nil, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 
@@ -136,12 +140,13 @@ func GetUserSpaceInfo(prk string) (UserStorageSpace, error) {
 		data UserStorageSpace
 	)
 
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return data, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 
@@ -180,14 +185,16 @@ func QuerySoldSpace() (uint64, error) {
 		err  error
 		data types.U128
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return 0, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+		if err := recover(); err != nil {
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
+
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
 		return 0, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_Sminer, Sminer_PurchasedSpace)
@@ -214,11 +221,13 @@ func GetFileMetaInfoOnChain(fid string) (FileMetaInfo, int, error) {
 		err   error
 		mdata FileMetaInfo
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return mdata, configs.Code_500, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
 		if err := recover(); err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 	meta, err := api.RPC.State.GetMetadataLatest()
@@ -252,11 +261,13 @@ func GetUserFileList(prvkey string) ([]UserFileList, int, error) {
 		err  error
 		data []UserFileList
 	)
-	api := getSubstrateAPI()
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return data, configs.Code_500, errors.Wrap(err, "NewRpcClient")
+	}
 	defer func() {
-		releaseSubstrateAPI()
 		if err := recover(); err != nil {
-			Err.Sugar().Errorf("[panic] %v", err)
+			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 

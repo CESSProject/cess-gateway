@@ -40,7 +40,7 @@ var content_captcha = `<!DOCTYPE html>
 														<tr style="font-weight:300">
 														<td style="max-width:480px;text-align:left;">
 																<p id="cTMail-userName" style="font-size:18px; font-weight: bold; color:#333; line-height:24px; margin:0;">
-																	Hey, Here's your Gateway auth captcha:
+																	Hey, Here's your captcha:
 																</p><br>
 																{{.Captcha}}
 																<br><br>
@@ -136,13 +136,13 @@ var content_token = `<!DOCTYPE html>
 														<tr style="font-weight:300">
 														<td style="max-width:480px;text-align:left;">
 																<p id="cTMail-userName" style="font-size:18px; font-weight: bold; color:#333; line-height:24px; margin:0;">
-																	Hey, Here's your Gateway auth token:
+																	Hey, Here's your token:
 																</p><br>
 																{{.Token}}
 																<br><br>
 																validity: 1 month
 																<br><br><br><br>
-																<p style="font-size:12px;">If this is not your action, please ignore and close this message.</p>
+																<p style="font-size:12px;">If this is not your action, your email may have been stolen, please change your password as soon as possible.</p>
 																<p style="font-size:12px;">This is a system email, please do not reply.</p>
 															</td>
 															

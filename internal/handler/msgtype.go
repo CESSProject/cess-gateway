@@ -6,6 +6,8 @@ const (
 	Status_200_expired      = "captcha has expired and a new captcha has been sent to your mailbox"
 	Status_200_RefreshToken = "A new token has been sent to your mailbox"
 	Status_200_NoFiles      = "No files"
+	Status_200_TokenExpired = "Token expired"
+	Status_200_NoRefresh    = "Please log in to your email to view the token."
 	//400
 	Status_400_default     = "HTTP Error"
 	Status_400_EmailFormat = "Email Format Error"
@@ -24,10 +26,12 @@ const (
 	Status_403_hotbackup      = "The file is in hot backup, please try again later."
 
 	//500
-	Status_500_db         = "Server internal data error"
-	Status_500_chain      = "Server internal chain data error"
-	Status_500_unexpected = "Server unexpected error"
-	Status_500_EmailSend  = "Please check email authorization code and whether to enable SMTP service"
+	Status_500_db            = "Server internal data error"
+	Status_500_chain         = "Server internal chain data error"
+	Status_500_unexpected    = "Server unexpected error"
+	Status_500_ReAuth        = "Please re-authenticate"
+	Status_500_EmailSend     = "Please confirm whether the SMTP service is enabled in your mailbox or contact the gateway administrator."
+	Status_500_RefreshFailed = "Please try again in 5 minutes."
 )
 
 // http response message

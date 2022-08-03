@@ -3,7 +3,7 @@ package configs
 import "time"
 
 // type and version
-const VERSION = "CESS-Gateway v0.1.2.220803.1144"
+const VERSION = "CESS-Gateway v0.1.2.220803.1533"
 
 const (
 	// base dir
@@ -33,6 +33,9 @@ const (
 
 	// The validity period of the token, the default is 30 days
 	ValidTimeOfToken = time.Duration(time.Hour * 24 * 30)
+
+	// Valid Time Of Captcha
+	ValidTimeOfCaptcha = time.Duration(time.Minute * 5)
 
 	//
 	SIZE_1GB = 1024 * 1024 * 1024

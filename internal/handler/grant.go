@@ -61,7 +61,7 @@ func GrantTokenHandler(c *gin.Context) {
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
 			captcha := tools.RandomInRange(100000, 999999)
-			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(time.Minute*10).Unix())
+			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(configs.ValidTimeOfCaptcha).Unix())
 			err = db.Put([]byte(reqmsg.Mailbox), []byte(v))
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
@@ -106,6 +106,7 @@ func GrantTokenHandler(c *gin.Context) {
 	if len(v) == 2 {
 		vi, err := strconv.ParseInt(v[1], 10, 64)
 		if err != nil {
+			db.Delete([]byte(reqmsg.Mailbox))
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 			resp.Msg = Status_500_unexpected
 			c.JSON(http.StatusInternalServerError, resp)
@@ -114,7 +115,7 @@ func GrantTokenHandler(c *gin.Context) {
 		if time.Now().Unix() >= time.Unix(vi, 0).Unix() {
 			Out.Sugar().Infof("[%v] [%v] Captcha has expired and a new captcha has been sent to your mailbox", c.ClientIP(), reqmsg)
 			captcha := tools.RandomInRange(100000, 999999)
-			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(time.Minute*10).Unix())
+			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(configs.ValidTimeOfCaptcha).Unix())
 			err = db.Put([]byte(reqmsg.Mailbox), []byte(v))
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
@@ -154,6 +155,7 @@ func GrantTokenHandler(c *gin.Context) {
 		}
 		vi, err = strconv.ParseInt(v[0], 10, 32)
 		if err != nil {
+			db.Delete([]byte(reqmsg.Mailbox))
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 			resp.Msg = Status_500_unexpected
 			c.JSON(http.StatusInternalServerError, resp)
@@ -204,7 +206,7 @@ func GrantTokenHandler(c *gin.Context) {
 			return
 		}
 		resp.Code = http.StatusOK
-		resp.Msg = Status_200_default
+		resp.Msg = Status_200_RefreshToken
 		c.JSON(http.StatusOK, resp)
 		return
 	}
@@ -216,19 +218,28 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+
 	var utoken token.TokenMsgType
 	err = json.Unmarshal(b, &utoken)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
-		resp.Msg = Status_500_unexpected
+		db.Delete([]byte(reqmsg.Mailbox))
+		resp.Msg = Status_500_ReAuth
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
 
-	if time.Now().Unix() < utoken.ExpirationTime {
+	tn := time.Now().Unix()
+	if tn > utoken.ExpirationTime {
 		resp.Code = http.StatusOK
-		resp.Msg = Status_200_default
-		resp.Data = "Please log in to your email to view the token."
+		resp.Msg = Status_200_TokenExpired
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	if (utoken.ExpirationTime + 300) > (tn + 2592000) {
+		resp.Code = http.StatusOK
+		resp.Msg = Status_200_NoRefresh
 		c.JSON(http.StatusOK, resp)
 		return
 	}
@@ -240,6 +251,7 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+
 	err = db.Put([]byte(utoken.Mailbox), []byte(newtoken))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
@@ -247,17 +259,14 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	resp.Code = http.StatusOK
-	resp.Msg = Status_200_RefreshToken
-	resp.Data = "token=" + newtoken
-	c.JSON(http.StatusOK, resp)
 
-	bs := bytes.NewBuffer(make([]byte, 0))
-	bw := bufio.NewWriter(bs)
+	var mail_s string
+	b2 := bytes.NewBuffer(make([]byte, 0))
+	bw := bufio.NewWriter(b2)
 	tpl := template.Must(template.New("tplName").Parse(content_token))
 	tpl.Execute(bw, map[string]interface{}{"Token": newtoken})
 	bw.Flush()
-	mail_s := fmt.Sprintf("%s", b)
+	mail_s = fmt.Sprintf("%s", b2)
 	err = communication.SendPlainMail(
 		configs.C.SMTPHost,
 		configs.C.SMTPPort,
@@ -269,7 +278,16 @@ func GrantTokenHandler(c *gin.Context) {
 	)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = Status_500_RefreshFailed
+		c.JSON(http.StatusInternalServerError, resp)
+		return
 	}
+
+	resp.Code = http.StatusOK
+	resp.Msg = Status_200_RefreshToken
+	c.JSON(http.StatusOK, resp)
+	return
 }
 
 // func RegrantTokenHandler(c *gin.Context) {

@@ -276,13 +276,13 @@ func parseProfile() {
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		log.Printf("[err] The '%v' file type error.\n", 41, confFilePath)
+		log.Printf("[err] The '%v' file type error.\n", confFilePath)
 		os.Exit(1)
 	}
 
 	err = viper.Unmarshal(configs.C)
 	if err != nil {
-		log.Printf("[err] Configuration file error, please use the default command to generate a template.\n", 41, confFilePath)
+		log.Printf("[err] Configuration file error, please use the default command to generate a template.\n")
 		os.Exit(1)
 	}
 
@@ -296,7 +296,7 @@ func parseProfile() {
 	}
 
 	if !tools.VerifyMailboxFormat(configs.C.EmailAddress) {
-		fmt.Printf("[err] '%v' email format error\n", 41, configs.C.EmailAddress)
+		fmt.Printf("[err] '%v' email format error\n", configs.C.EmailAddress)
 		os.Exit(1)
 	}
 

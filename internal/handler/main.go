@@ -8,6 +8,7 @@ import (
 )
 
 func Main() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true

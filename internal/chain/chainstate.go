@@ -134,47 +134,45 @@ func GetSpaceDetailsInfo(prk string) ([]UserSpaceListInfo, error) {
 }
 
 // Get user space information on the cess chain
-func GetUserSpaceInfo(prk string) (UserStorageSpace, error) {
-	var (
-		err  error
-		data UserStorageSpace
-	)
-
-	api, err := NewRpcClient(configs.C.RpcAddr)
-	if err != nil {
-		return data, errors.Wrap(err, "NewRpcClient")
-	}
+func GetSpacePackageInfo(prk string) (SpacePackage, error) {
 	defer func() {
 		if err := recover(); err != nil {
 			Err.Sugar().Errorf("%v", tools.RecoverError(err))
 		}
 	}()
 
+	var data SpacePackage
+
+	api, err := NewRpcClient(configs.C.RpcAddr)
+	if err != nil {
+		return data, errors.Wrap(err, "NewRpcClient")
+	}
+
 	meta, err := api.RPC.State.GetMetadataLatest()
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileBank_UserSpaceInfo)
+		return data, errors.Wrap(err, "[GetMetadataLatest]")
 	}
 
 	keyring, err := signature.KeyringPairFromSecret(prk, 0)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:KeyringPairFromSecret]", State_FileBank, FileBank_UserSpaceList)
+		return data, errors.Wrap(err, "KeyringPairFromSecret]")
 	}
 
 	b, err := types.EncodeToBytes(types.NewAccountID(keyring.PublicKey))
 	if err != nil {
 		return data, err
 	}
-	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_UserSpaceInfo, b)
+	key, err := types.CreateStorageKey(meta, State_FileBank, FileBank_PurchasedPackage, b)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:CreateStorageKey]", State_FileBank, FileBank_UserSpaceInfo)
+		return data, errors.Wrap(err, "[CreateStorageKey]")
 	}
 
 	ok, err := api.RPC.State.GetStorageLatest(key, &data)
 	if err != nil {
-		return data, errors.Wrapf(err, "[%v.%v:GetStorageLatest]", State_FileBank, FileBank_UserSpaceInfo)
+		return data, errors.Wrap(err, "[GetStorageLatest]")
 	}
 	if !ok {
-		return data, errors.Errorf("[%v.%v:GetStorageLatest value is nil]", State_FileBank, FileBank_UserSpaceInfo)
+		return data, errors.New("Not found")
 	}
 	return data, nil
 }

@@ -2,6 +2,7 @@ package encryption
 
 import (
 	"cess-gateway/configs"
+	"cess-gateway/tools"
 	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
@@ -27,7 +28,10 @@ func generateRSAKeyfile(bits int) error {
 	if err1 == nil && err2 == nil {
 		return nil
 	}
-
+	err = tools.CreatDirIfNotExist(configs.BaseDir)
+	if err != nil {
+		return err
+	}
 	privateKey, err := rsa.GenerateKey(rand.Reader, bits)
 	if err != nil {
 		return err

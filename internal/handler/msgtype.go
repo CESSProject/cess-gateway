@@ -21,7 +21,7 @@ const (
 
 	//403
 	Status_403_default        = "Forbidden"
-	Status_403_NotEnoughSpace = "not enough space"
+	Status_403_NotEnoughSpace = "The gateway account space is insufficient, please contact the administrator."
 	Status_403_dufilename     = "duplicate filename"
 	Status_403_hotbackup      = "The file is in hot backup, please try again later."
 
@@ -32,6 +32,11 @@ const (
 	Status_500_ReAuth        = "Please re-authenticate"
 	Status_500_EmailSend     = "Please confirm whether the SMTP service is enabled in your mailbox or contact the gateway administrator."
 	Status_500_RefreshFailed = "Please try again in 5 minutes."
+	Status_500_Notfound      = "Gateway service is unavailable, please contact administrator."
+)
+
+const (
+	ERR_404 = "Not found"
 )
 
 // http response message

@@ -114,8 +114,14 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	spaceInfo, err := chain.GetUserSpaceInfo(configs.C.AccountSeed)
+	sp, err := chain.GetSpacePackageInfo(configs.C.AccountSeed)
 	if err != nil {
+		if err.Error() == ERR_404 {
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = Status_500_Notfound
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError
 		resp.Msg = Status_500_chain
@@ -123,7 +129,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	remainSpace := spaceInfo.Remaining_space.Uint64()
+	remainSpace := sp.Remaining_space.Uint64()
 
 	if remainSpace < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
@@ -169,7 +175,7 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	buf := make([]byte, 2*1024*1024)
+	buf := make([]byte, 4*1024*1024)
 	for {
 		n, err := file_c.Read(buf)
 		if err == io.EOF {

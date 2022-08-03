@@ -20,6 +20,7 @@ func Main() {
 	r.GET("/:fid", DownfileHandler)
 	r.POST("/auth", GrantTokenHandler)
 	r.GET("/files", FilelistHandler)
+	r.GET("/state/:fid", FilestateHandler)
 	r.DELETE("/:fid", DeletefileHandler)
 
 	// run

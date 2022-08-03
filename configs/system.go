@@ -3,7 +3,7 @@ package configs
 import "time"
 
 // type and version
-const VERSION = "CESS-Gateway v0.1.2.220802.1951"
+const VERSION = "CESS-Gateway v0.1.2.220803.1144"
 
 const (
 	// base dir

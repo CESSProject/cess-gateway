@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	cesskeyring "github.com/CESSProject/go-keyring"
@@ -272,6 +273,7 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 			ch <- 1
 			Uld.Sugar().Infof("[panic]: [%v] [%v] %v", mailbox, fpath, err)
 		}
+		runtime.GC()
 	}()
 	fstat, err := os.Stat(fpath)
 	if err != nil {

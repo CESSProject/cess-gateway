@@ -31,7 +31,7 @@ const (
 	RandomValidTime = 5.0
 
 	// the time to wait for the event, in seconds
-	TimeToWaitEvents = time.Duration(time.Second * 20)
+	TimeToWaitEvents = time.Duration(time.Second * 15)
 
 	// The validity period of the token, the default is 30 days
 	ValidTimeOfToken = time.Duration(time.Hour * 24 * 30)
@@ -73,3 +73,5 @@ const (
 	Code_500 = 500
 	Code_600 = 600
 )
+
+var PublicKey []byte

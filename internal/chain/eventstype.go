@@ -216,6 +216,29 @@ type Event_UploadDeclaration struct {
 	Topics   []types.Hash
 }
 
+type Event_BuyPackage struct {
+	Phase  types.Phase
+	Acc    types.AccountID
+	Size   types.U128
+	Fee    types.U128
+	Topics []types.Hash
+}
+
+type Event_PackageUpgrade struct {
+	Phase    types.Phase
+	Acc      types.AccountID
+	Old_type types.U8
+	New_type types.U8
+	Topics   []types.Hash
+}
+
+type Event_PackageRenewal struct {
+	Phase        types.Phase
+	Acc          types.AccountID
+	Package_type types.U8
+	Topics       []types.Hash
+}
+
 //------------------------FileMap--------------------------------
 type Event_RegistrationScheduler struct {
 	Phase  types.Phase
@@ -290,6 +313,9 @@ type MyEventRecords struct {
 	FileBank_RecoverFile          []Event_RecoverFile
 	FileBank_ReceiveSpace         []Event_ReceiveSpace
 	FileBank_UploadDeclaration    []Event_UploadDeclaration
+	FileBank_BuyPackage           []Event_BuyPackage
+	FileBank_PackageUpgrade       []Event_PackageUpgrade
+	FileBank_PackageRenewal       []Event_PackageRenewal
 	//FileMap
 	FileMap_RegistrationScheduler []Event_RegistrationScheduler
 	//other system

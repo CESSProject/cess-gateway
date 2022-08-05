@@ -30,6 +30,11 @@ const (
 	ChainTx_FileBank_RenewalPackage    = "FileBank.renewal_package"
 )
 
+const (
+	ERR_Failed  = "Failed"
+	ERR_Timeout = "Timeout"
+)
+
 //---RegisterMsg
 type RegisterMsg struct {
 	Acc      types.Bytes `json:"acc"`

@@ -173,8 +173,16 @@ func Command_BuySpace_Runfunc(cmd *cobra.Command, args []string) {
 	refreshProfile(cmd)
 	logger.Log_Init()
 	txhash, err := chain.BuySpacePackage(types.U8(p_type), count)
-	if txhash == "" {
-		log.Printf("[err] Failed purchase: %v\n", err)
+	if err != nil {
+		if err.Error() == chain.ERR_Failed {
+			log.Printf("[err] %v: Please check the balance or available space.\n", err)
+		} else {
+			if txhash != "" {
+				log.Printf("[warn] Please check the transaction result of this hash: %v.\n", txhash)
+			} else {
+				log.Printf("[err] %v.\n", err)
+			}
+		}
 		os.Exit(1)
 	}
 	logger.Out.Sugar().Infof("Space purchased successfully: %v", txhash)
@@ -337,6 +345,13 @@ func parseProfile() {
 	}
 
 	if err := tools.CreatDirIfNotExist(configs.FileCacheDir); err != nil {
+		log.Printf("[err] %v\n", err)
+		os.Exit(1)
+	}
+
+	//
+	configs.PublicKey, err = chain.GetPublicKey(configs.C.AccountSeed)
+	if err != nil {
 		log.Printf("[err] %v\n", err)
 		os.Exit(1)
 	}

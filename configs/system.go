@@ -64,6 +64,22 @@ const (
 	EmailSubject_token   = "CESS | Authorization token"
 )
 
+const (
+	HELP_common = `Please check with the following help information:
+    1.Check whether the available space is sufficient
+    2.Check if the wallet balance is sufficient
+    3.Block hash:`
+	HELP_Buy = `    4.Check the fileBank.buyPackage transaction event result in the block hash above:
+        If system.ExtrinsicFailed is prompted, it means failure;
+        If system.ExtrinsicSuccess is prompted, it means success;`
+	HELP_Upgrade = `    4.Check the fileBank.upgradePackage transaction event result in the block hash above:
+        If system.ExtrinsicFailed is prompted, it means failure;
+        If system.ExtrinsicSuccess is prompted, it means success;`
+	HELP_Renewal = `    4.Check the fileBank.renewalPackage transaction event result in the block hash above:
+        If system.ExtrinsicFailed is prompted, it means failure;
+        If system.ExtrinsicSuccess is prompted, it means success;`
+)
+
 // return state code
 const (
 	Code_200 = 200

@@ -174,11 +174,13 @@ func Command_BuySpace_Runfunc(cmd *cobra.Command, args []string) {
 	logger.Log_Init()
 	txhash, err := chain.BuySpacePackage(types.U8(p_type), count)
 	if err != nil {
-		if err.Error() == chain.ERR_Failed {
-			log.Printf("[err] %v: Please check the balance or available space.\n", err)
+		if err.Error() == chain.ERR_Empty {
+			log.Println("[err] Please check your wallet balance.")
 		} else {
 			if txhash != "" {
-				log.Printf("[warn] Please check the transaction result of this hash: %v.\n", txhash)
+				msg := configs.HELP_common + fmt.Sprintf(" %v\n", txhash)
+				msg += configs.HELP_Buy
+				log.Printf("[pending] %v\n", msg)
 			} else {
 				log.Printf("[err] %v.\n", err)
 			}
@@ -208,7 +210,7 @@ func Command_UpgradePackage_Runfunc(cmd *cobra.Command, args []string) {
 	}
 	if p_type == 5 {
 		if len(os.Args) < 4 {
-			log.Println("[err] Please enter the purchased space size (unit: TB)")
+			log.Println("[err] Please enter the purchased space size (unit: TiB)")
 			os.Exit(1)
 		}
 		si, err := strconv.ParseUint(os.Args[3], 10, 64)
@@ -225,11 +227,21 @@ func Command_UpgradePackage_Runfunc(cmd *cobra.Command, args []string) {
 	refreshProfile(cmd)
 	logger.Log_Init()
 	txhash, err := chain.UpgradeSpacePackage(types.U8(p_type), count)
-	if txhash == "" {
-		log.Printf("[err] Upgrade package failed: %v\n", err)
+	if err != nil {
+		if err.Error() == chain.ERR_Empty {
+			log.Println("[err] Please check your wallet balance.")
+		} else {
+			if txhash != "" {
+				msg := configs.HELP_common + fmt.Sprintf(" %v\n", txhash)
+				msg += configs.HELP_Upgrade
+				log.Printf("[pending] %v\n", msg)
+			} else {
+				log.Printf("[err] %v.\n", err)
+			}
+		}
 		os.Exit(1)
 	}
-	logger.Out.Sugar().Infof("Upgrade package successfully: %v", txhash)
+	logger.Out.Sugar().Infof("Upgrade space package successfully: %v", txhash)
 	log.Printf("[ok] success\n")
 	os.Exit(0)
 }
@@ -239,11 +251,21 @@ func Command_Renewal_Runfunc(cmd *cobra.Command, args []string) {
 	refreshProfile(cmd)
 	logger.Log_Init()
 	txhash, err := chain.Renewal()
-	if txhash == "" {
-		log.Printf("[err] Renewal package failed: %v\n", err)
+	if err != nil {
+		if err.Error() == chain.ERR_Empty {
+			log.Println("[err] Please check your wallet balance.")
+		} else {
+			if txhash != "" {
+				msg := configs.HELP_common + fmt.Sprintf(" %v\n", txhash)
+				msg += configs.HELP_Renewal
+				log.Printf("[pending] %v\n", msg)
+			} else {
+				log.Printf("[err] %v.\n", err)
+			}
+		}
 		os.Exit(1)
 	}
-	logger.Out.Sugar().Infof("Renewal package successfully: %v", txhash)
+	logger.Out.Sugar().Infof("Renewal space package successfully: %v", txhash)
 	log.Printf("[ok] success\n")
 	os.Exit(0)
 }

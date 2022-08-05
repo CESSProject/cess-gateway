@@ -33,6 +33,7 @@ const (
 const (
 	ERR_Failed  = "Failed"
 	ERR_Timeout = "Timeout"
+	ERR_Empty   = "Empty"
 )
 
 //---RegisterMsg

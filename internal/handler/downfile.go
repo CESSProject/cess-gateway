@@ -46,30 +46,27 @@ func DownfileHandler(c *gin.Context) {
 	}
 
 	// file meta info
-	count := 0
-	code := configs.Code_404
-	fmeta := chain.FileMetaInfo{}
-	for code != configs.Code_200 {
-		fmeta, code, err = chain.GetFileMetaInfoOnChain(fid)
-		if count > 3 && code != configs.Code_200 {
-			Err.Sugar().Errorf("[%v] %v", c.ClientIP(), err)
-			resp.Code = http.StatusInternalServerError
-			resp.Msg = Status_500_unexpected
-			c.JSON(http.StatusInternalServerError, resp)
+	fmeta, err := chain.GetFileMetaInfoOnChain(fid)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] %v", c.ClientIP(), err)
+		if err.Error() == chain.ERR_Empty {
+			resp.Code = http.StatusNotFound
+			resp.Msg = Status_400_NotUploaded
+			c.JSON(http.StatusNotFound, resp)
 			return
 		}
-		if code != configs.Code_200 {
-			time.Sleep(time.Second * 3)
-		} else {
-			if string(fmeta.FileState) != "active" {
-				Err.Sugar().Errorf("[%v] file state is not active", c.ClientIP())
-				resp.Code = http.StatusBadRequest
-				resp.Msg = Status_403_default
-				c.JSON(http.StatusForbidden, resp)
-				return
-			}
-		}
-		count++
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
+	if string(fmeta.FileState) != "active" {
+		Err.Sugar().Errorf("[%v] file state is not active", c.ClientIP())
+		resp.Code = http.StatusForbidden
+		resp.Msg = Status_403_hotbackup
+		c.JSON(http.StatusForbidden, resp)
+		return
 	}
 
 	for i := 0; i < len(fmeta.ChunkInfo); i++ {

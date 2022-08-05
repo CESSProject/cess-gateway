@@ -2,6 +2,7 @@ package handler
 
 import (
 	"cess-gateway/configs"
+	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -24,6 +25,7 @@ func Main() {
 	r.GET("/state/:fid", FilestateHandler)
 	r.DELETE("/:fid", DeletefileHandler)
 
+	log.Printf("Start and listen on %v ...", configs.C.ServicePort)
 	// run
 	r.Run(":" + configs.C.ServicePort)
 }

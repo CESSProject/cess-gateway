@@ -48,6 +48,7 @@ func init() {
 		Command_BuySpace(),
 		Command_UpgradePackage(),
 		Command_Renewal(),
+		Command_Space(),
 	)
 	rootCmd.PersistentFlags().StringVarP(&configs.ConfigFilePath, "config", "c", "", "Custom profile")
 }
@@ -107,6 +108,16 @@ func Command_Renewal() *cobra.Command {
 		Use:                   "renewal",
 		Short:                 "One-month lease term for additional space package",
 		Run:                   Command_Renewal_Runfunc,
+		DisableFlagsInUseLine: true,
+	}
+	return cc
+}
+
+func Command_Space() *cobra.Command {
+	cc := &cobra.Command{
+		Use:                   "space",
+		Short:                 "View purchased space details",
+		Run:                   Command_Space_Runfunc,
 		DisableFlagsInUseLine: true,
 	}
 	return cc
@@ -267,6 +278,26 @@ func Command_Renewal_Runfunc(cmd *cobra.Command, args []string) {
 	}
 	logger.Out.Sugar().Infof("Renewal space package successfully: %v", txhash)
 	log.Printf("[ok] success\n")
+	os.Exit(0)
+}
+
+// Increase space package lease term
+func Command_Space_Runfunc(cmd *cobra.Command, args []string) {
+	refreshProfile(cmd)
+	logger.Log_Init()
+	sp, err := chain.GetSpacePackageInfo(configs.C.AccountSeed)
+	if err != nil {
+		if err.Error() == chain.ERR_Empty {
+			log.Println("[ok] No space package purchased.")
+		} else {
+			log.Printf("[err] %v.\n", err)
+		}
+		os.Exit(0)
+	}
+
+	//print your own details
+	fmt.Printf("Total Space: %v byte\nUsed Space: %v byte\nRemaining Space: %v byte\nPackage Type: %v\nDeadline: %v\nState: %v\n",
+		sp.Space, sp.Used_space, sp.Remaining_space, sp.Package_type, sp.Deadline, string(sp.State))
 	os.Exit(0)
 }
 

@@ -1,9 +1,7 @@
 package handler
 
 import (
-	"cess-gateway/configs"
 	"cess-gateway/internal/chain"
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -21,7 +19,6 @@ func FilestateHandler(c *gin.Context) {
 		Msg:  Status_401_token,
 	}
 	fid := c.Param("fid")
-	fmt.Println("fid:", fid)
 	if fid == "" {
 		resp.Code = http.StatusBadRequest
 		resp.Msg = Status_400_default
@@ -29,11 +26,11 @@ func FilestateHandler(c *gin.Context) {
 		return
 	}
 	//query all file meta
-	filestate, code, _ := chain.GetFileMetaInfoOnChain(fid)
-	if code != configs.Code_200 {
-		if code == configs.Code_404 {
+	filestate, err := chain.GetFileMetaInfoOnChain(fid)
+	if err != nil {
+		if err.Error() == chain.ERR_Empty {
 			resp.Code = http.StatusNotFound
-			resp.Msg = "Not found"
+			resp.Msg = chain.ERR_Empty
 			c.JSON(http.StatusOK, resp)
 			return
 		}

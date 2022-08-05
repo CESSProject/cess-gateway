@@ -84,11 +84,11 @@ func FilelistHandler(c *gin.Context) {
 	resp.Code = http.StatusInternalServerError
 	resp.Msg = Status_500_unexpected
 	//query all file meta
-	filelist, code, _ := chain.GetUserFileList(configs.C.AccountSeed)
-	if code != configs.Code_200 {
-		if code == configs.Code_404 {
+	filelist, err := chain.GetUserFileList(configs.C.AccountSeed)
+	if err != nil {
+		if err.Error() == chain.ERR_Empty {
 			resp.Code = http.StatusOK
-			resp.Msg = "empty"
+			resp.Msg = chain.ERR_Empty
 			c.JSON(http.StatusOK, resp)
 			return
 		}

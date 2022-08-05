@@ -208,11 +208,12 @@ func UpfileHandler(c *gin.Context) {
 
 	key_fid := usertoken.Mailbox + fileid
 
-	txhash, _, err := chain.UploadDeclaration(configs.C.AccountSeed, fileid, filename)
+	txhash, err := chain.UploadDeclaration(configs.C.AccountSeed, fileid, filename)
 	if txhash == "" {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Msg = Status_500_db
 		c.JSON(http.StatusInternalServerError, resp)
+		return
 	}
 
 	err = db.Put([]byte(key), []byte(key_fid))
@@ -290,12 +291,7 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 	if fstat.Size()%configs.RpcBuffer != 0 {
 		authreq.BlockTotal += 1
 	}
-	authreq.PublicKey, err = chain.GetPubkeyFromPrk(configs.C.AccountSeed)
-	if err != nil {
-		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-		return
-	}
+	authreq.PublicKey = configs.PublicKey
 
 	authreq.Msg = []byte(tools.GetRandomcode(16))
 	kr, _ := cesskeyring.FromURI(configs.C.AccountSeed, cesskeyring.NetSubstrate{})

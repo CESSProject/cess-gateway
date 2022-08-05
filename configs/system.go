@@ -5,7 +5,7 @@ import (
 )
 
 // type and version
-const VERSION = "CESS-Gateway v0.1.2.220803.1733"
+const VERSION = "CESS-Gateway v0.1.2.220805.1532"
 
 const (
 	// base dir

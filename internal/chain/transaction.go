@@ -116,7 +116,7 @@ func UploadDeclaration(transactionPrK, filehash, filename string) (string, error
 
 				if len(events.FileBank_UploadDeclaration) > 0 {
 					for i := 0; i < len(events.FileBank_UploadDeclaration); i++ {
-						if string(events.FileBank_UploadDeclaration[i].FileHash) == filehash {
+						if string(events.FileBank_UploadDeclaration[i].File_hash) == filehash {
 							return txhash, nil
 						}
 					}

@@ -189,8 +189,8 @@ func Command_BuySpace_Runfunc(cmd *cobra.Command, args []string) {
 			log.Println("[err] Please check your wallet balance.")
 		} else {
 			if txhash != "" {
-				msg := configs.HELP_common + fmt.Sprintf(" %v\n", txhash)
-				msg += configs.HELP_Buy
+				msg := configs.HELP_BuySpace1 + fmt.Sprintf(" %v\n", txhash)
+				msg += configs.HELP_BuySpace2
 				log.Printf("[pending] %v\n", msg)
 			} else {
 				log.Printf("[err] %v.\n", err)

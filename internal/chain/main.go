@@ -43,9 +43,7 @@ func GetRpcClient_Safe(rpcaddr string) (*gsrpc.SubstrateAPI, error) {
 }
 
 func healthchek(a *gsrpc.SubstrateAPI) (uint64, error) {
-	defer func() {
-		recover()
-	}()
+	defer recover()
 	h, err := a.RPC.System.Health()
 	return uint64(h.Peers), err
 }
@@ -96,7 +94,7 @@ func GetGenesisHash(api *gsrpc.SubstrateAPI) (types.Hash, error) {
 }
 
 func GetPublicKey(privatekey string) ([]byte, error) {
-	kring, err := signature.KeyringPairFromSecret(configs.C.AccountSeed, 0)
+	kring, err := signature.KeyringPairFromSecret(privatekey, 0)
 	if err != nil {
 		return nil, err
 	}

@@ -14,16 +14,16 @@ we are happy to communicate with you.
 
 ## Build from source
 
-**Step 1:** Install common libraries
+### Step 1: Install common libraries
 
 Take the ubuntu distribution as an example:
 
 ```shell
-sudo apt upgrade
+sudo apt update && sudo upgrade
 sudo apt install make gcc git curl wget vim util-linux -y
 ```
 
-**Step 2:** Install go locale
+### Step 2: Install go locale
 
 CESS-Gateway requires [Go1.16.5](https://golang.org/dl/) or higher.
 > See the [official Golang installation instructions](https://golang.org/doc/install) If you get stuck in the following process.
@@ -46,7 +46,7 @@ echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc && source ~/.bashrc
 go version
 ```
 
-**Step 3:** Build a gateway
+### Step 3: Build a gateway
 
 ```
 git clone https://github.com/CESSProject/cess-gateway.git
@@ -55,51 +55,83 @@ go build -o gateway cmd/main.go
 ```
 If all goes well, you will get a program called `gateway`.
 
-
 ## Get started with gateway
 
-**Step 1:** Register a polka wallet
+### Step 1: Register a polka wallet
 
 Browser access: [App](https://testnet-rpc.cess.cloud/explorer) implemented by [CESS Explorer](https://github.com/CESSProject/cess-explorer), and [add an account](https://github.com/CESSProject/W3F-illustration/blob/main/gateway/createAccount.PNG).
 
-**Step 2:** Recharge your polka wallet
+### Step 2: Recharge your polka wallet
 
 If you are using the test network, Please join the [CESS discord](https://discord.gg/mYHTMfBwNS) to get it for free. If you are using the official network, please buy CESS tokens.
 
-**Step 3:** Buy space for your account
+### Step 3: Prepare configuration file
 
-Browser access: [App](https://testnet-rpc.cess.cloud/explorer) implemented by [CESS Explorer](https://github.com/CESSProject/cess-explorer), and [buy space](https://github.com/CESSProject/W3F-illustration/blob/main/gateway/purchaseSpace.PNG).
-
-**Step 4:** Prepare configuration file
-
-Prepare a configuration file named "conf.toml", put it in the same directory as `gateway`, and its contents are as follows, you need to fill in your own information into the configuration file.
-> Our testnet rpc address is: `wss://testnet-rpc.cess.cloud/ws/`
-```toml
-#The rpc address of the chain node
-RpcAddr       = ""
-#The ip address that the cess-gateway service listens to
-ServiceAddr   = ""
-#The port number on which the cess-gateway service listens
-ServicePort   = ""
-#Phrase or seed of for wallet account
-AccountSeed   = ""
-#Email address
-EmailAddress  = ""
-#Email password
-EmailPassword = ""
-#Outgoing server address of SMTP service
-EmailHost     = ""
-#Outgoing server port number of SMTP service
-EmailHostPort = 0
-```
-
-**Step 5:** Start the gateway service
-
+Use `gateway` to generate configuration file templates directly in the current directory:
 ```shell
 sudo chmod +x gateway
+./gateway default
+```
+The content of the configuration file template is as follows. You need to fill in your own information into the file. By default, the `gateway` uses conf.toml in the current directory as the runtime configuration file. You can use `-c` or `--config` to specify the configuration file Location.
+
+```toml
+#The rpc address of the chain node
+RpcAddr           = ""
+#The port number on which the cess-gateway service listens
+ServicePort       = "8081"
+#Phrase or seed for wallet account
+AccountSeed       = ""
+#Email address
+EmailAddress      = ""
+#Email authorization code
+AuthorizationCode = ""
+#Outgoing server address of SMTP service
+SMTPHost          = ""
+#Outgoing server port number of SMTP service
+SMTPPort          = 0
+```
+*Our testnet rpc address is as follows:*<br>
+`wss://testnet-rpc0.cess.cloud/ws/`<br>
+`wss://testnet-rpc1.cess.cloud/ws/`
+
+### Step 4: Buy space package for your account
+There are five types of space packages, represented by 1 to 5.
+- Package 1 means purchasing 10GiB space and the cost is 0;
+- Package 2 means purchasing 500GiB space;
+- Package 3 means purchasing 1TiB space;
+- Package 4 means purchasing 5TiB space;
+- Package 5 means that the purchased space exceeds 5TiB, and an integer greater than 5 needs to be specified;
+
+**Buy space operation:**
+
+```shell
+./gateway buy [1,2,3,4,5] [6~]
+```
+
+### Step 5: Start the gateway service
+
+```shell
 sudo nohup ./gateway 2>&1 &
 ```
 
+## Other usage guidelines for gateway
+### Upgrade space package
+The space package can only be upgraded from low-level to high-level, and cannot be downgraded.
+Take the upgrade of package 1 to package 2 as an example:
+```
+./gateway upgrade 1 2
+```
+
+### Space Package Renewal
+By default, the space package is only valid for 1 month, and each renewal will add a month of validity.
+```
+./gateway renewal
+```
+
+### View space package details
+```
+./gateway space
+```
 
 # Usage for gateway API
 
@@ -174,8 +206,8 @@ curl URL/auth -X POST -d '{"mailbox": "", "captcha": 0}' -H "Content-Type: appli
 
 ## Upload a file
 
-| **PUT** /filename |
-| -------------------- |
+| **PUT** /{filename} |
+| ------------------- |
 
 The put file interface is used to upload files to the cess system. You need to submit the file as form data and use provide the specific field.
 If the upload is successful, you will get the fid of the file.
@@ -213,8 +245,8 @@ Response Schema: `application/json`
 
 ## Download a file
 
-| **GET** /fid |
-| -------------------- |
+| **GET** /{fid} |
+| -------------- |
 
 The get file interface downloads the file in the CESS storage system according to the fid.
 
@@ -234,7 +266,7 @@ The response schema for the exception return status is: `application/json`, The 
 - Request example
 
 ```
-curl -X GET -L URL/fid
+curl -X GET -L URL/{fid}
 ```
 
 
@@ -242,8 +274,8 @@ curl -X GET -L URL/fid
 
 The delete file interface is used for delete a put file.
 
-| **DELETE** /fid |
-| ----------------------- |
+| **DELETE** /{fid} |
+| ----------------- |
 
 - Request Header
 
@@ -266,7 +298,7 @@ Response Schema: `application/json`
 - Request example
 
 ```
-curl -X DELETE URL/fid -H "Authorization: token"
+curl -X DELETE URL/{fid} -H "Authorization: token"
 ```
 
 ## List previous operation
@@ -306,6 +338,29 @@ Response Schema: `application/json`
 curl -X GET URL/files -H "Authorization: token"
 ```
 
+## View file status
+
+| **GET** /state/{fid} |
+| -------------------- |
+
+View file status (size, status, name).
+
+- Responses
+
+Response Schema: `application/json`
+
+| status code               | structure                                   | description                                                  |
+| ------------------------- | ------------------------------------------- | ------------------------------------------------------------ |
+| 200 OK                    | code:200<br />msg:string<br />data:{"Size","State","Names"} | `msg` `data`:{"Size","State","Names"}        |
+| 400 Bad Request           | code:400<br />msg:string                    | `msg` Default: "HTTP error"                                  |
+| 404 Not Found             | code:404<br />msg:string                    | `msg`Default: "Empty"                                        |
+| 500 Internal Server Error | code:500<br />msg:string                    | `msg` Enum: ["Server internal data error"，"Server unexpected error"] |
+
+- Request example
+
+```
+curl -X GET URL/state/{fid}
+```
 
 ## License
 

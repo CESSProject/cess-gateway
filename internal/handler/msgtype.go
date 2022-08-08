@@ -6,11 +6,13 @@ const (
 	Status_200_expired      = "captcha has expired and a new captcha has been sent to your mailbox"
 	Status_200_RefreshToken = "A new token has been sent to your mailbox"
 	Status_200_NoFiles      = "No files"
+	Status_200_TokenExpired = "Token expired"
+	Status_200_NoRefresh    = "Please log in to your email to view the token."
 	//400
-	Status_400_default     = "HTTP error"
-	Status_400_EmailFormat = "Email format error"
+	Status_400_default     = "HTTP Error"
+	Status_400_EmailFormat = "Email Format Error"
 	Status_400_captcha     = "captcha error"
-	Status_400_EmailSmpt   = "Please check your email address and whether to enable SMTP service"
+
 	Status_400_NotUploaded = "This file has not been uploaded"
 
 	//401
@@ -19,14 +21,22 @@ const (
 
 	//403
 	Status_403_default        = "Forbidden"
-	Status_403_NotEnoughSpace = "not enough space"
+	Status_403_NotEnoughSpace = "The gateway account space is insufficient, please contact the administrator."
 	Status_403_dufilename     = "duplicate filename"
 	Status_403_hotbackup      = "The file is in hot backup, please try again later."
 
 	//500
-	Status_500_db         = "Server internal data error"
-	Status_500_chain      = "Server internal chain data error"
-	Status_500_unexpected = "Server unexpected error"
+	Status_500_db            = "Server internal data error"
+	Status_500_chain         = "Server internal chain data error"
+	Status_500_unexpected    = "Server unexpected error"
+	Status_500_ReAuth        = "Please re-authenticate"
+	Status_500_EmailSend     = "Please confirm whether the SMTP service is enabled in your mailbox or contact the gateway administrator."
+	Status_500_RefreshFailed = "Please try again in 5 minutes."
+	Status_500_Notfound      = "Gateway service is unavailable, please contact administrator."
+)
+
+const (
+	ERR_404 = "Not found"
 )
 
 // http response message

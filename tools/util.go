@@ -8,11 +8,13 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
 	"regexp"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -153,4 +155,26 @@ func CalcHash(data []byte) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// Write string content to file
+func WriteStringtoFile(content, fileName string) error {
+	f, err := os.Create(fileName)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func RecoverError(err interface{}) string {
+	buf := new(bytes.Buffer)
+	fmt.Fprintf(buf, "%v\n", "--------------------panic--------------------")
+	fmt.Fprintf(buf, "%v\n", err)
+	fmt.Fprintf(buf, "%v\n", string(debug.Stack()))
+	return buf.String()
 }

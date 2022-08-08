@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"bufio"
+	"bytes"
 	"cess-gateway/configs"
 	"cess-gateway/internal/communication"
 	"cess-gateway/internal/db"
@@ -9,6 +11,7 @@ import (
 	"cess-gateway/tools"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -38,7 +41,7 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 
-	// Check if the email format is correct
+	// Check email format
 	if !tools.VerifyMailboxFormat(reqmsg.Mailbox) {
 		Err.Sugar().Errorf("%v,%v", c.ClientIP(), err)
 		resp.Msg = Status_400_EmailFormat
@@ -54,11 +57,11 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	bytes, err := db.Get([]byte(reqmsg.Mailbox))
+	data_byte, err := db.Get([]byte(reqmsg.Mailbox))
 	if err != nil {
 		if err.Error() == "leveldb: not found" {
 			captcha := tools.RandomInRange(100000, 999999)
-			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(time.Minute*10).Unix())
+			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(configs.ValidTimeOfCaptcha).Unix())
 			err = db.Put([]byte(reqmsg.Mailbox), []byte(v))
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
@@ -66,24 +69,27 @@ func GrantTokenHandler(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
-			// Send verification code to email
-			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
-			body += fmt.Sprintf("%v", captcha)
-			body += "\nValidity: 5 minutes"
+			var mail_s string
+			b := bytes.NewBuffer(make([]byte, 0))
+			bw := bufio.NewWriter(b)
+			tpl := template.Must(template.New("tplName").Parse(content_captcha))
+			tpl.Execute(bw, map[string]interface{}{"Captcha": captcha})
+			bw.Flush()
+			mail_s = fmt.Sprintf("%s", b)
 			err = communication.SendPlainMail(
-				configs.Confile.EmailHost,
-				configs.Confile.EmailHostPort,
-				configs.Confile.EmailAddress,
-				configs.Confile.EmailPassword,
+				configs.C.SMTPHost,
+				configs.C.SMTPPort,
+				configs.C.EmailAddress,
+				configs.C.AuthorizationCode,
 				[]string{reqmsg.Mailbox},
 				configs.EmailSubject_captcha,
-				body,
+				mail_s,
 			)
 			if err != nil {
+				db.Delete([]byte(reqmsg.Mailbox))
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
-				resp.Code = http.StatusBadRequest
-				resp.Msg = Status_400_EmailSmpt
-				c.JSON(http.StatusBadRequest, resp)
+				resp.Msg = Status_500_EmailSend
+				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
 			resp.Code = http.StatusOK
@@ -96,10 +102,11 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	v := strings.Split(string(bytes), "#")
+	v := strings.Split(string(data_byte), "#")
 	if len(v) == 2 {
 		vi, err := strconv.ParseInt(v[1], 10, 64)
 		if err != nil {
+			db.Delete([]byte(reqmsg.Mailbox))
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 			resp.Msg = Status_500_unexpected
 			c.JSON(http.StatusInternalServerError, resp)
@@ -108,7 +115,7 @@ func GrantTokenHandler(c *gin.Context) {
 		if time.Now().Unix() >= time.Unix(vi, 0).Unix() {
 			Out.Sugar().Infof("[%v] [%v] Captcha has expired and a new captcha has been sent to your mailbox", c.ClientIP(), reqmsg)
 			captcha := tools.RandomInRange(100000, 999999)
-			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(time.Minute*10).Unix())
+			v := fmt.Sprintf("%v", captcha) + "#" + fmt.Sprintf("%v", time.Now().Add(configs.ValidTimeOfCaptcha).Unix())
 			err = db.Put([]byte(reqmsg.Mailbox), []byte(v))
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
@@ -116,24 +123,28 @@ func GrantTokenHandler(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
-			// Send verification code to email
-			body := "Hello, " + reqmsg.Mailbox + "!\nWelcome to CESS-GATEWAY authentication service, please write captcha to the authorization page.\ncaptcha: "
-			body += fmt.Sprintf("%v", captcha)
-			body += "\nvalidity: 5 minutes"
+			var mail_s string
+			b := bytes.NewBuffer(make([]byte, 0))
+			bw := bufio.NewWriter(b)
+			tpl := template.Must(template.New("tplName").Parse(content_captcha))
+			tpl.Execute(bw, map[string]interface{}{"Captcha": captcha})
+			bw.Flush()
+			mail_s = fmt.Sprintf("%s", b)
 			err = communication.SendPlainMail(
-				configs.Confile.EmailHost,
-				configs.Confile.EmailHostPort,
-				configs.Confile.EmailAddress,
-				configs.Confile.EmailPassword,
+				configs.C.SMTPHost,
+				configs.C.SMTPPort,
+				configs.C.EmailAddress,
+				configs.C.AuthorizationCode,
 				[]string{reqmsg.Mailbox},
 				configs.EmailSubject_captcha,
-				body,
+				mail_s,
 			)
 			if err != nil {
 				Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+				db.Delete([]byte(reqmsg.Mailbox))
 				resp.Code = http.StatusBadRequest
-				resp.Msg = Status_400_EmailSmpt
-				c.JSON(http.StatusBadRequest, resp)
+				resp.Msg = Status_500_EmailSend
+				c.JSON(http.StatusInternalServerError, resp)
 				return
 			}
 
@@ -144,6 +155,7 @@ func GrantTokenHandler(c *gin.Context) {
 		}
 		vi, err = strconv.ParseInt(v[0], 10, 32)
 		if err != nil {
+			db.Delete([]byte(reqmsg.Mailbox))
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 			resp.Msg = Status_500_unexpected
 			c.JSON(http.StatusInternalServerError, resp)
@@ -170,39 +182,36 @@ func GrantTokenHandler(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
-		body := "Hello, " + reqmsg.Mailbox + "!\nCongratulations on your successful authentication, your token is:\n"
-		body += usertoken
+		var mail_s string
+		b := bytes.NewBuffer(make([]byte, 0))
+		bw := bufio.NewWriter(b)
+		tpl := template.Must(template.New("tplName").Parse(content_token))
+		tpl.Execute(bw, map[string]interface{}{"Token": usertoken})
+		bw.Flush()
+		mail_s = fmt.Sprintf("%s", b)
 		err = communication.SendPlainMail(
-			configs.Confile.EmailHost,
-			configs.Confile.EmailHostPort,
-			configs.Confile.EmailAddress,
-			configs.Confile.EmailPassword,
+			configs.C.SMTPHost,
+			configs.C.SMTPPort,
+			configs.C.EmailAddress,
+			configs.C.AuthorizationCode,
 			[]string{reqmsg.Mailbox},
 			configs.EmailSubject_token,
-			body,
+			mail_s,
 		)
 		if err != nil {
 			Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
-			resp.Code = http.StatusBadRequest
-			resp.Msg = Status_400_EmailSmpt
-			c.JSON(http.StatusBadRequest, resp)
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = Status_500_EmailSend
+			c.JSON(http.StatusInternalServerError, resp)
 			return
 		}
 		resp.Code = http.StatusOK
-		resp.Msg = Status_200_default
+		resp.Msg = Status_200_RefreshToken
 		c.JSON(http.StatusOK, resp)
 		return
 	}
 
-	b, err := token.DecryptToken(string(bytes))
-	if err != nil {
-		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
-		resp.Msg = Status_500_unexpected
-		c.JSON(http.StatusInternalServerError, resp)
-		return
-	}
-	var utoken token.TokenMsgType
-	err = json.Unmarshal(b, &utoken)
+	b, err := token.DecryptToken(string(data_byte))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
 		resp.Msg = Status_500_unexpected
@@ -210,10 +219,27 @@ func GrantTokenHandler(c *gin.Context) {
 		return
 	}
 
-	if time.Now().Unix() < utoken.ExpirationTime {
+	var utoken token.TokenMsgType
+	err = json.Unmarshal(b, &utoken)
+	if err != nil {
+		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		db.Delete([]byte(reqmsg.Mailbox))
+		resp.Msg = Status_500_ReAuth
+		c.JSON(http.StatusInternalServerError, resp)
+		return
+	}
+
+	tn := time.Now().Unix()
+	if tn > utoken.ExpirationTime {
 		resp.Code = http.StatusOK
-		resp.Msg = Status_200_default
-		resp.Data = "Please log in to your email to view the token."
+		resp.Msg = Status_200_TokenExpired
+		c.JSON(http.StatusOK, resp)
+		return
+	}
+
+	if (utoken.ExpirationTime + 300) > (tn + 2592000) {
+		resp.Code = http.StatusOK
+		resp.Msg = Status_200_NoRefresh
 		c.JSON(http.StatusOK, resp)
 		return
 	}
@@ -225,6 +251,7 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+
 	err = db.Put([]byte(utoken.Mailbox), []byte(newtoken))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
@@ -232,25 +259,35 @@ func GrantTokenHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	resp.Code = http.StatusOK
-	resp.Msg = Status_200_RefreshToken
-	resp.Data = "token=" + newtoken
-	c.JSON(http.StatusOK, resp)
 
-	bodys := "Hello, " + reqmsg.Mailbox + "!\nYour new token is as follows:\n"
-	bodys += newtoken
+	var mail_s string
+	b2 := bytes.NewBuffer(make([]byte, 0))
+	bw := bufio.NewWriter(b2)
+	tpl := template.Must(template.New("tplName").Parse(content_token))
+	tpl.Execute(bw, map[string]interface{}{"Token": newtoken})
+	bw.Flush()
+	mail_s = fmt.Sprintf("%s", b2)
 	err = communication.SendPlainMail(
-		configs.Confile.EmailHost,
-		configs.Confile.EmailHostPort,
-		configs.Confile.EmailAddress,
-		configs.Confile.EmailPassword,
+		configs.C.SMTPHost,
+		configs.C.SMTPPort,
+		configs.C.EmailAddress,
+		configs.C.AuthorizationCode,
 		[]string{reqmsg.Mailbox},
 		configs.EmailSubject_token,
-		bodys,
+		mail_s,
 	)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] [%v] %v", c.ClientIP(), reqmsg, err)
+		resp.Code = http.StatusInternalServerError
+		resp.Msg = Status_500_RefreshFailed
+		c.JSON(http.StatusInternalServerError, resp)
+		return
 	}
+
+	resp.Code = http.StatusOK
+	resp.Msg = Status_200_RefreshToken
+	c.JSON(http.StatusOK, resp)
+	return
 }
 
 // func RegrantTokenHandler(c *gin.Context) {

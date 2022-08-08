@@ -2,12 +2,14 @@ package handler
 
 import (
 	"cess-gateway/configs"
+	"log"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
 func Main() {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
@@ -20,8 +22,10 @@ func Main() {
 	r.GET("/:fid", DownfileHandler)
 	r.POST("/auth", GrantTokenHandler)
 	r.GET("/files", FilelistHandler)
+	r.GET("/state/:fid", FilestateHandler)
 	r.DELETE("/:fid", DeletefileHandler)
 
+	log.Printf("Start and listen on %v ...", configs.C.ServicePort)
 	// run
-	r.Run(":" + configs.Confile.ServicePort)
+	r.Run(":" + configs.C.ServicePort)
 }

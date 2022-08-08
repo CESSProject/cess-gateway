@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	cesskeyring "github.com/CESSProject/go-keyring"
@@ -114,8 +115,14 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	spaceInfo, err := chain.GetUserSpaceInfo(configs.Confile.AccountSeed)
+	sp, err := chain.GetSpacePackageInfo(configs.C.AccountSeed)
 	if err != nil {
+		if err.Error() == ERR_404 {
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = Status_500_Notfound
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Code = http.StatusInternalServerError
 		resp.Msg = Status_500_chain
@@ -123,7 +130,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	remainSpace := spaceInfo.Remaining_space.Uint64()
+	remainSpace := sp.Remaining_space.Uint64()
 
 	if remainSpace < uint64(file_p.Size) {
 		resp.Code = http.StatusForbidden
@@ -169,7 +176,7 @@ func UpfileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
-	buf := make([]byte, 2*1024*1024)
+	buf := make([]byte, 4*1024*1024)
 	for {
 		n, err := file_c.Read(buf)
 		if err == io.EOF {
@@ -201,11 +208,12 @@ func UpfileHandler(c *gin.Context) {
 
 	key_fid := usertoken.Mailbox + fileid
 
-	txhash, _, err := chain.UploadDeclaration(configs.Confile.AccountSeed, fileid, filename)
+	txhash, err := chain.UploadDeclaration(configs.C.AccountSeed, fileid, filename)
 	if txhash == "" {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Msg = Status_500_db
 		c.JSON(http.StatusInternalServerError, resp)
+		return
 	}
 
 	err = db.Put([]byte(key), []byte(key_fid))
@@ -266,6 +274,7 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 			ch <- 1
 			Uld.Sugar().Infof("[panic]: [%v] [%v] %v", mailbox, fpath, err)
 		}
+		runtime.GC()
 	}()
 	fstat, err := os.Stat(fpath)
 	if err != nil {
@@ -282,15 +291,10 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 	if fstat.Size()%configs.RpcBuffer != 0 {
 		authreq.BlockTotal += 1
 	}
-	authreq.PublicKey, err = chain.GetPubkeyFromPrk(configs.Confile.AccountSeed)
-	if err != nil {
-		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-		return
-	}
+	authreq.PublicKey = configs.PublicKey
 
 	authreq.Msg = []byte(tools.GetRandomcode(16))
-	kr, _ := cesskeyring.FromURI(configs.Confile.AccountSeed, cesskeyring.NetSubstrate{})
+	kr, _ := cesskeyring.FromURI(configs.C.AccountSeed, cesskeyring.NetSubstrate{})
 	// sign message
 	sign, err := kr.Sign(kr.SigningContext(authreq.Msg))
 	if err != nil {

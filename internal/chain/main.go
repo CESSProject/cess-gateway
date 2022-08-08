@@ -2,79 +2,110 @@ package chain
 
 import (
 	"cess-gateway/configs"
-	. "cess-gateway/internal/logger"
-	"fmt"
-	"os"
+	"reflect"
 	"sync"
-	"time"
 
 	gsrpc "github.com/centrifuge/go-substrate-rpc-client/v4"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/signature"
+	"github.com/centrifuge/go-substrate-rpc-client/v4/types"
 )
 
 var (
-	l *sync.Mutex
-	r *gsrpc.SubstrateAPI
+	first          bool = true
+	l              *sync.Mutex
+	api            *gsrpc.SubstrateAPI
+	metadata       *types.Metadata
+	keyEvents      types.StorageKey
+	runtimeVersion *types.RuntimeVersion
+	genesisHash    types.Hash
+	keyring        signature.KeyringPair
 )
 
-// init
-func Init() {
-	var err error
-	r, err = gsrpc.NewSubstrateAPI(configs.Confile.RpcAddr)
-	if err != nil {
-		fmt.Printf("\x1b[%dm[err]\x1b[0m %v\n", 41, err)
-		os.Exit(1)
-	}
+func init() {
 	l = new(sync.Mutex)
-	go substrateAPIKeepAlive()
 }
 
-// KeepAlive
-func substrateAPIKeepAlive() {
-	var (
-		err   error
-		count uint8  = 0
-		peer  uint64 = 0
-		tk           = time.Tick(time.Second * 25)
-	)
-
-	for range tk {
-		if count <= 1 {
-			peer, err = healthcheck(r)
-			if err != nil || peer == 0 {
-				count++
-			}
-		}
-		if count > 1 {
-			count = 2
-			r, err = gsrpc.NewSubstrateAPI(configs.Confile.RpcAddr)
-			if err == nil {
-				Err.Sugar().Errorf("%v", err)
-			} else {
-				count = 0
-			}
+func GetRpcClient_Safe(rpcaddr string) (*gsrpc.SubstrateAPI, error) {
+	var err error
+	l.Lock()
+	if api == nil {
+		api, err = gsrpc.NewSubstrateAPI(rpcaddr)
+		return api, err
+	}
+	id, err := healthchek(api)
+	if id == 0 || err != nil {
+		api, err = gsrpc.NewSubstrateAPI(rpcaddr)
+		if err != nil {
+			return nil, err
 		}
 	}
+	return api, nil
 }
 
-// health check
-func healthcheck(a *gsrpc.SubstrateAPI) (uint64, error) {
-	defer func() {
-		err := recover()
-		if err != nil {
-			Err.Sugar().Errorf("[panic]: %v", err)
-		}
-	}()
+func healthchek(a *gsrpc.SubstrateAPI) (uint64, error) {
+	defer recover()
 	h, err := a.RPC.System.Health()
 	return uint64(h.Peers), err
 }
 
-// get SubstrateAPI and lock
-func getSubstrateAPI() *gsrpc.SubstrateAPI {
-	l.Lock()
-	return r
+func Free() {
+	l.Unlock()
 }
 
-// unlock
-func releaseSubstrateAPI() {
-	l.Unlock()
+func NewRpcClient(rpcaddr string) (*gsrpc.SubstrateAPI, error) {
+	return gsrpc.NewSubstrateAPI(rpcaddr)
+}
+
+func GetMetadata(api *gsrpc.SubstrateAPI) (*types.Metadata, error) {
+	var err error
+	if metadata == nil {
+		metadata, err = api.RPC.State.GetMetadataLatest()
+		return metadata, err
+	}
+	return metadata, nil
+}
+
+func GetKeyEvents() (types.StorageKey, error) {
+	var err error
+	if len(keyEvents) == 0 {
+		keyEvents, err = types.CreateStorageKey(metadata, "System", "Events", nil)
+		return keyEvents, err
+	}
+	return keyEvents, nil
+}
+
+func GetRuntimeVersion(api *gsrpc.SubstrateAPI) (*types.RuntimeVersion, error) {
+	var err error
+	if runtimeVersion == nil {
+		runtimeVersion, err = api.RPC.State.GetRuntimeVersionLatest()
+		return runtimeVersion, err
+	}
+	return runtimeVersion, nil
+}
+
+func GetGenesisHash(api *gsrpc.SubstrateAPI) (types.Hash, error) {
+	var err error
+	if first {
+		first = false
+		genesisHash, err = api.RPC.Chain.GetBlockHash(0)
+		return genesisHash, err
+	}
+	return genesisHash, nil
+}
+
+func GetPublicKey(privatekey string) ([]byte, error) {
+	kring, err := signature.KeyringPairFromSecret(privatekey, 0)
+	if err != nil {
+		return nil, err
+	}
+	return kring.PublicKey, nil
+}
+
+func GetKeyring() (signature.KeyringPair, error) {
+	var err error
+	if reflect.DeepEqual(keyring, signature.KeyringPair{}) {
+		keyring, err = signature.KeyringPairFromSecret(configs.C.AccountSeed, 0)
+		return keyring, err
+	}
+	return keyring, nil
 }

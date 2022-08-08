@@ -12,12 +12,12 @@ const (
 
 // cess chain module method
 const (
-	FileMap_FileMetaInfo   = "File"
-	FileMap_SchedulerInfo  = "SchedulerMap"
-	FileBank_UserSpaceList = "UserSpaceList"
-	FileBank_UserSpaceInfo = "UserHoldSpaceDetails"
-	FileBank_UserFilelist  = "UserHoldFileList"
-	Sminer_PurchasedSpace  = "PurchasedSpace"
+	FileMap_FileMetaInfo      = "File"
+	FileMap_SchedulerInfo     = "SchedulerMap"
+	FileBank_UserSpaceList    = "UserSpaceList"
+	FileBank_UserFilelist     = "UserHoldFileList"
+	Sminer_PurchasedSpace     = "PurchasedSpace"
+	FileBank_PurchasedPackage = "PurchasedPackage"
 )
 
 // cess chain Transaction name
@@ -25,6 +25,15 @@ const (
 	ChainTx_FileBank_Upload            = "FileBank.upload"
 	ChainTx_FileBank_DeleteFile        = "FileBank.delete_file"
 	ChainTx_FileBank_UploadDeclaration = "FileBank.upload_declaration"
+	ChainTx_FileBank_BuyPackage        = "FileBank.buy_package"
+	ChainTx_FileBank_UpgradePackage    = "FileBank.upgrade_package"
+	ChainTx_FileBank_RenewalPackage    = "FileBank.renewal_package"
+)
+
+const (
+	ERR_Failed  = "Failed"
+	ERR_Timeout = "Timeout"
+	ERR_Empty   = "Empty"
 )
 
 //---RegisterMsg
@@ -66,10 +75,15 @@ type UserSpaceListInfo struct {
 	Deadline types.U32  `json:"deadline"`
 }
 
-type UserStorageSpace struct {
-	Purchased_space types.U128
+type SpacePackage struct {
+	Space           types.U128
 	Used_space      types.U128
 	Remaining_space types.U128
+	Tenancy         types.U32
+	Package_type    types.U8
+	Start           types.U32
+	Deadline        types.U32
+	State           types.Bytes
 }
 
 type UserFileList struct {

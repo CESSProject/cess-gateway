@@ -1,6 +1,11 @@
 package configs
 
-import "time"
+import (
+	"time"
+)
+
+// type and version
+const VERSION = "CESS-Gateway v0.1.2.220808.1800"
 
 const (
 	// base dir
@@ -26,10 +31,13 @@ const (
 	RandomValidTime = 5.0
 
 	// the time to wait for the event, in seconds
-	TimeToWaitEvents = time.Duration(time.Second * 20)
+	TimeToWaitEvents = time.Duration(time.Second * 15)
 
 	// The validity period of the token, the default is 30 days
 	ValidTimeOfToken = time.Duration(time.Hour * 24 * 30)
+
+	// Valid Time Of Captcha
+	ValidTimeOfCaptcha = time.Duration(time.Minute * 5)
 
 	//
 	SIZE_1GB = 1024 * 1024 * 1024
@@ -56,6 +64,25 @@ const (
 	EmailSubject_token   = "CESS | Authorization token"
 )
 
+const (
+	HELP_common = `Please check with the following help information:
+    1.Check if the wallet balance is sufficient
+    2.Block hash:`
+	HELP_BuySpace1 = `Please check with the following help information:
+    1.Check whether the available space is sufficient
+    2.Check if the wallet balance is sufficient
+    3.Block hash:`
+	HELP_BuySpace2 = `    4.Check the fileBank.buyPackage transaction event result in the block hash above:
+        If system.ExtrinsicFailed is prompted, it means failure;
+        If system.ExtrinsicSuccess is prompted, it means success;`
+	HELP_Upgrade = `    3.Check the fileBank.upgradePackage transaction event result in the block hash above:
+        If system.ExtrinsicFailed is prompted, it means failure;
+        If system.ExtrinsicSuccess is prompted, it means success;`
+	HELP_Renewal = `    3.Check the fileBank.renewalPackage transaction event result in the block hash above:
+        If system.ExtrinsicFailed is prompted, it means failure;
+        If system.ExtrinsicSuccess is prompted, it means success;`
+)
+
 // return state code
 const (
 	Code_200 = 200
@@ -65,3 +92,5 @@ const (
 	Code_500 = 500
 	Code_600 = 600
 )
+
+var PublicKey []byte

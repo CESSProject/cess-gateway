@@ -1,53 +1,29 @@
 package configs
 
-import (
-	"cess-gateway/tools"
-	"errors"
-	"fmt"
-	"os"
-
-	"github.com/spf13/viper"
-)
-
 type Configfile struct {
-	RpcAddr       string `toml:"RpcAddr"`
-	ServiceAddr   string `toml:"ServiceAddr"`
-	ServicePort   string `toml:"ServicePort"`
-	AccountSeed   string `toml:"AccountSeed"`
-	EmailAddress  string `toml:"EmailAddress"`
-	EmailPassword string `toml:"EmailPassword"`
-	EmailHost     string `toml:"EmailHost"`
-	EmailHostPort int    `toml:"EmailHostPort"`
+	RpcAddr           string `toml:"RpcAddr"`
+	ServicePort       string `toml:"ServicePort"`
+	AccountSeed       string `toml:"AccountSeed"`
+	EmailAddress      string `toml:"EmailAddress"`
+	AuthorizationCode string `toml:"AuthorizationCode"`
+	SMTPHost          string `toml:"SMTPHost"`
+	SMTPPort          int    `toml:"SMTPPort"`
 }
 
-var Confile = new(Configfile)
+var C = new(Configfile)
+var ConfigFilePath string
 
-func ParseConfile() error {
-	f, err := os.Stat("conf.toml")
-	if err != nil {
-		return err
-	}
-	if f.IsDir() {
-		return errors.New("conf.toml not found")
-	}
-
-	viper.SetConfigFile("conf.toml")
-	viper.SetConfigType("toml")
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		return err
-	}
-
-	err = viper.Unmarshal(Confile)
-	if err != nil {
-		return err
-	}
-
-	if !tools.VerifyMailboxFormat(Confile.EmailAddress) {
-		fmt.Printf("\x1b[%dm[err]\x1b[0m '%v' email format error\n", 41, Confile.EmailAddress)
-		os.Exit(1)
-	}
-
-	return nil
-}
+const ConfigFile_Templete = `#The rpc address of the chain node
+RpcAddr           = ""
+#The port number on which the cess-gateway service listens
+ServicePort       = "8081"
+#Phrase or seed for wallet account
+AccountSeed       = ""
+#Email address
+EmailAddress      = ""
+#Email authorization code
+AuthorizationCode = ""
+#Outgoing server address of SMTP service
+SMTPHost          = ""
+#Outgoing server port number of SMTP service
+SMTPPort          = 0`

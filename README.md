@@ -111,7 +111,7 @@ There are five types of space packages, represented by 1 to 5.
 ### Step 5: Start the gateway service
 
 ```shell
-sudo nohup ./gateway 2>&1 &
+sudo nohup ./gateway run 2>&1 &
 ```
 
 ## Other usage guidelines for gateway

@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 
 	cesskeyring "github.com/CESSProject/go-keyring"
@@ -25,6 +26,39 @@ import (
 	"google.golang.org/protobuf/proto"
 	"storj.io/common/base58"
 )
+
+type ConnectedCtl struct {
+	l    *sync.Mutex
+	conn map[string]struct{}
+}
+
+var connctl *ConnectedCtl
+
+func init() {
+	connctl = &ConnectedCtl{
+		l:    new(sync.Mutex),
+		conn: make(map[string]struct{}),
+	}
+}
+
+func (this *ConnectedCtl) Is(key string) bool {
+	this.l.Lock()
+	defer this.l.Unlock()
+	_, ok := this.conn[key]
+	return ok
+}
+
+func (this *ConnectedCtl) Add(key string) {
+	this.l.Lock()
+	defer this.l.Unlock()
+	this.conn[key] = struct{}{}
+}
+
+func (this *ConnectedCtl) Del(key string) {
+	this.l.Lock()
+	defer this.l.Unlock()
+	delete(this.conn, key)
+}
 
 func UpfileHandler(c *gin.Context) {
 	var resp = RespMsg{
@@ -314,6 +348,9 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 	var client *rpc.Client
 	for i, schd := range schds {
 		wsURL := "ws://" + string(base58.Decode(string(schd.Ip)))
+		if connctl.Is(wsURL) {
+			continue
+		}
 		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
 		client, err = rpc.DialWebsocket(ctx, wsURL, "")
 		if err != nil {
@@ -324,6 +361,8 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 				return
 			}
 		} else {
+			connctl.Add(wsURL)
+			defer connctl.Del(wsURL)
 			break
 		}
 	}

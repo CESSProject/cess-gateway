@@ -69,16 +69,23 @@ func DownfileHandler(c *gin.Context) {
 		return
 	}
 
+	r := len(fmeta.ChunkInfo) / 3
+	d := len(fmeta.ChunkInfo) - r
+	down_count := 0
 	for i := 0; i < len(fmeta.ChunkInfo); i++ {
 		// Download the file from the scheduler service
 		fname := filepath.Join(configs.FileCacheDir, string(fmeta.ChunkInfo[i].ChunkId))
-		err = downloadFromStorage(fname, string(fmeta.ChunkInfo[i].MinerIp))
+		err = downloadFromStorage(fname, int64(fmeta.ChunkInfo[i].ChunkSize), string(fmeta.ChunkInfo[i].MinerIp))
 		if err != nil {
-			Err.Sugar().Errorf("[%v] Error downloading %drd shard", c.ClientIP(), i)
+			Err.Sugar().Errorf("[%v] Downloading %drd shard err: %v", c.ClientIP(), i, err)
+		} else {
+			down_count++
+		}
+		if down_count >= d {
+			break
 		}
 	}
-	r := len(fmeta.ChunkInfo) / 3
-	d := len(fmeta.ChunkInfo) - r
+
 	err = fileHandling.ReedSolomon_Restore(configs.FileCacheDir, fid, d, r)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] ReedSolomon_Restore: %v", c.ClientIP(), err)
@@ -95,21 +102,24 @@ func DownfileHandler(c *gin.Context) {
 }
 
 // Download files from cess storage service
-func downloadFromStorage(fpath string, mip string) error {
-	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0666)
-	if err != nil {
-		return err
+func downloadFromStorage(fpath string, fsize int64, mip string) error {
+	fsta, err := os.Stat(fpath)
+	if err == nil {
+		if fsta.Size() == fsize {
+			return nil
+		} else {
+			os.Remove(fpath)
+		}
 	}
-	defer file.Close()
 
 	var client *rpc.Client
 
 	wsURL := "ws://" + string(base58.Decode(mip))
 
-	ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
 	client, err = rpc.DialWebsocket(ctx, wsURL, "")
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "[Dial %v]", wsURL)
 	}
 
 	var wantfile rpc.FileDownloadReq
@@ -121,13 +131,20 @@ func downloadFromStorage(fpath string, mip string) error {
 	reqmsg := rpc.ReqMsg{}
 	reqmsg.Method = configs.RpcMethod_ReadFile
 	reqmsg.Service = configs.RpcService_Miner
+
+	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0666)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
 	for {
 		data, err := proto.Marshal(&wantfile)
 		if err != nil {
 			return err
 		}
 		reqmsg.Body = data
-		ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
+		ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
 		resp, err := client.Call(ctx, &reqmsg)
 		if err != nil {
 			return err

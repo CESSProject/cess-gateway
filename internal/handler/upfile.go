@@ -29,7 +29,7 @@ import (
 
 type ConnectedCtl struct {
 	l    *sync.Mutex
-	conn map[string]struct{}
+	conn map[string]int64
 }
 
 var connctl *ConnectedCtl
@@ -37,21 +37,27 @@ var connctl *ConnectedCtl
 func init() {
 	connctl = &ConnectedCtl{
 		l:    new(sync.Mutex),
-		conn: make(map[string]struct{}),
+		conn: make(map[string]int64, 2),
 	}
 }
 
 func (this *ConnectedCtl) Is(key string) bool {
 	this.l.Lock()
 	defer this.l.Unlock()
-	_, ok := this.conn[key]
+	v, ok := this.conn[key]
+	if ok {
+		if time.Now().Unix() <= v {
+			delete(this.conn, key)
+			return false
+		}
+	}
 	return ok
 }
 
-func (this *ConnectedCtl) Add(key string) {
+func (this *ConnectedCtl) Add(key string, value int64) {
 	this.l.Lock()
-	defer this.l.Unlock()
-	this.conn[key] = struct{}{}
+	this.conn[key] = value
+	this.l.Unlock()
 }
 
 func (this *ConnectedCtl) Del(key string) {
@@ -60,6 +66,7 @@ func (this *ConnectedCtl) Del(key string) {
 	delete(this.conn, key)
 }
 
+//
 func UpfileHandler(c *gin.Context) {
 	var resp = RespMsg{
 		Code: http.StatusUnauthorized,
@@ -321,6 +328,7 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 	authreq.FileId = fid
 	authreq.FileName = fname
 	authreq.FileSize = uint64(fstat.Size())
+	value := authreq.FileSize / 1024 / 1024
 	authreq.BlockTotal = uint32(fstat.Size() / configs.RpcBuffer)
 	if fstat.Size()%configs.RpcBuffer != 0 {
 		authreq.BlockTotal += 1
@@ -361,8 +369,9 @@ func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
 				return
 			}
 		} else {
-			connctl.Add(wsURL)
-			defer connctl.Del(wsURL)
+			if value >= 10 {
+				connctl.Add(wsURL, time.Now().Add(time.Second*time.Duration(2*value)).Unix())
+			}
 			break
 		}
 	}

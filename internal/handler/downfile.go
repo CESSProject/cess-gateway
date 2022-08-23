@@ -144,7 +144,7 @@ func downloadFromStorage(fpath string, fsize int64, mip string) error {
 			return err
 		}
 		reqmsg.Body = data
-		ctx, _ := context.WithTimeout(context.Background(), 20*time.Second)
+		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 		resp, err := client.Call(ctx, &reqmsg)
 		if err != nil {
 			return err

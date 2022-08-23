@@ -119,7 +119,7 @@ sudo nohup ./gateway run 2>&1 &
 The space package can only be upgraded from low-level to high-level, and cannot be downgraded.
 Take the upgrade of package 1 to package 2 as an example:
 ```
-./gateway upgrade 1 2
+./gateway upgrade 2
 ```
 
 ### Space Package Renewal

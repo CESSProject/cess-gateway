@@ -266,7 +266,7 @@ The response schema for the exception return status is: `application/json`, The 
 - Request example
 
 ```
-curl -X GET -L URL/{fid}
+curl -o {filename} -X GET -L URL/{fid}
 ```
 
 

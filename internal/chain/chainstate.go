@@ -69,7 +69,7 @@ func GetFileMetaInfo(fileid int64) (FileMetaInfo, error) {
 		return data, errors.Wrapf(err, "[%v.%v:GetMetadataLatest]", State_FileBank, FileMap_FileMetaInfo)
 	}
 	fileid_s := fmt.Sprintf("%d", fileid)
-	id, err := types.EncodeToBytes(fileid_s)
+	id, err := types.Encode(fileid_s)
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:EncodeToBytes]", State_FileBank, FileMap_FileMetaInfo)
 	}
@@ -114,7 +114,7 @@ func GetSpaceDetailsInfo(prk string) ([]UserSpaceListInfo, error) {
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:KeyringPairFromSecret]", State_FileBank, FileBank_UserSpaceList)
 	}
-	b, err := types.EncodeToBytes(types.NewAccountID(keyring.PublicKey))
+	b, err := types.Encode(types.NewAccountID(keyring.PublicKey))
 	if err != nil {
 		return data, errors.Wrapf(err, "[%v.%v:KeyringPairFromSecret]", State_FileBank, FileBank_UserSpaceList)
 	}
@@ -155,7 +155,7 @@ func GetSpacePackageInfo(prk string) (SpacePackage, error) {
 		return data, errors.Wrap(err, "[GetMetadata]")
 	}
 
-	b, err := types.EncodeToBytes(types.NewAccountID(configs.PublicKey))
+	b, err := types.Encode(types.NewAccountID(configs.PublicKey))
 	if err != nil {
 		return data, err
 	}
@@ -175,7 +175,7 @@ func GetSpacePackageInfo(prk string) (SpacePackage, error) {
 	return data, nil
 }
 
-//Query sold space information on the cess chain
+// Query sold space information on the cess chain
 func QuerySoldSpace() (uint64, error) {
 	var (
 		err  error
@@ -232,7 +232,7 @@ func GetFileMetaInfoOnChain(fid string) (FileMetaInfo, error) {
 		return data, errors.Wrap(err, "[GetMetadataLatest]")
 	}
 
-	b, err := types.EncodeToBytes(fid)
+	b, err := types.Encode(fid)
 	if err != nil {
 		return data, errors.Wrap(err, "[EncodeToBytes]")
 	}

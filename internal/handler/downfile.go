@@ -3,7 +3,7 @@ package handler
 import (
 	"cess-gateway/configs"
 	"cess-gateway/internal/chain"
-	"cess-gateway/internal/fileHandling"
+	"cess-gateway/internal/erasure"
 	. "cess-gateway/internal/logger"
 	"cess-gateway/internal/rpc"
 	"context"
@@ -86,7 +86,7 @@ func DownfileHandler(c *gin.Context) {
 		}
 	}
 
-	err = fileHandling.ReedSolomon_Restore(configs.FileCacheDir, fid, d, r)
+	err = erasure.ReedSolomon_Restore(configs.FileCacheDir, fid, d, r)
 	if err != nil {
 		Err.Sugar().Errorf("[%v] ReedSolomon_Restore: %v", c.ClientIP(), err)
 		resp.Code = http.StatusInternalServerError

@@ -4,26 +4,26 @@ import (
 	"cess-gateway/configs"
 	"cess-gateway/internal/chain"
 	"cess-gateway/internal/db"
+	"cess-gateway/internal/erasure"
+	"cess-gateway/internal/hashtree"
 	. "cess-gateway/internal/logger"
-	"cess-gateway/internal/rpc"
+	"cess-gateway/internal/tcp"
 	"cess-gateway/internal/token"
 	"cess-gateway/tools"
-	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"time"
 
 	cesskeyring "github.com/CESSProject/go-keyring"
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 	"storj.io/common/base58"
 )
 
@@ -66,7 +66,6 @@ func (this *ConnectedCtl) Del(key string) {
 	delete(this.conn, key)
 }
 
-//
 func UpfileHandler(c *gin.Context) {
 	var resp = RespMsg{
 		Code: http.StatusUnauthorized,
@@ -201,6 +200,7 @@ func UpfileHandler(c *gin.Context) {
 		}
 	}
 
+	// Calc file path
 	fpath := filepath.Join(configs.FileCacheDir, url.QueryEscape(filename))
 	_, err = os.Stat(fpath)
 	if err == nil {
@@ -211,12 +211,15 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
+	// Create file
 	f, err := os.Create(fpath)
 	if err != nil {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+
+	// Save file
 	buf := make([]byte, 4*1024*1024)
 	for {
 		n, err := file_c.Read(buf)
@@ -236,19 +239,51 @@ func UpfileHandler(c *gin.Context) {
 	}
 	f.Close()
 
-	//Calc file id
-	hash, err := calcFileHashByChunks(fpath, configs.SIZE_1GB)
+	// Calc file state
+	fstat, err := os.Stat(fpath)
 	if err != nil {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
 		resp.Msg = Status_500_unexpected
 		c.JSON(http.StatusInternalServerError, resp)
 	}
-	fileid := "cess" + hash
+
+	// Calc reedsolomon
+	chunkPath, datachunkLen, rduchunkLen, err := erasure.ReedSolomon(fpath, fstat.Size())
+	if err != nil {
+		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+	}
+
+	if len(chunkPath) != (datachunkLen + rduchunkLen) {
+		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, "ReedSolomon failed")
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+	}
+
+	// Calc merkle hash tree
+	hTree, err := hashtree.NewHashTree(chunkPath)
+	if err != nil {
+		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
+		resp.Msg = Status_500_unexpected
+		c.JSON(http.StatusInternalServerError, resp)
+	}
+
+	// Merkel root hash
+	fileid := hex.EncodeToString(hTree.MerkleRoot())
+
+	// Rename the file and chunks with root hash
+	var newChunksPath = make([]string, 0)
 	newpath := filepath.Join(configs.FileCacheDir, fileid)
 	os.Rename(fpath, newpath)
+	for i := 0; i < len(chunkPath); i++ {
+		var ext = filepath.Ext(chunkPath[i])
+		var newchunkpath = filepath.Join(configs.FileCacheDir, fileid+ext)
+		os.Rename(chunkPath[i], newchunkpath)
+		newChunksPath = append(newChunksPath, fileid+ext)
+	}
 
-	key_fid := usertoken.Mailbox + fileid
-
+	// Declaration file
 	txhash, err := chain.UploadDeclaration(configs.C.AccountSeed, fileid, filename)
 	if txhash == "" {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
@@ -257,6 +292,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
+	key_fid := usertoken.Mailbox + fileid
 	err = db.Put([]byte(key), []byte(key_fid))
 	if err != nil {
 		Uld.Sugar().Infof("[%v] %v", usertoken.Mailbox, err)
@@ -272,7 +308,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	go task_StoreFile(newpath, usertoken.Mailbox, fileid, filename)
+	go task_StoreFile(newChunksPath, usertoken.Mailbox, fileid, filename)
 	resp.Code = http.StatusOK
 	resp.Msg = Status_200_default
 	resp.Data = fmt.Sprintf("%v", fileid)
@@ -280,7 +316,7 @@ func UpfileHandler(c *gin.Context) {
 	return
 }
 
-func task_StoreFile(fpath, mailbox, fid, fname string) {
+func task_StoreFile(fpath []string, mailbox, fid, fname string) {
 	defer func() {
 		if err := recover(); err != nil {
 			Err.Sugar().Errorf("%v", err)
@@ -308,188 +344,69 @@ func task_StoreFile(fpath, mailbox, fid, fname string) {
 }
 
 // Upload files to cess storage system
-func uploadToStorage(ch chan uint8, fpath, mailbox, fid, fname string) {
+func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) {
 	defer func() {
 		err := recover()
 		if err != nil {
 			ch <- 1
 			Uld.Sugar().Infof("[panic]: [%v] [%v] %v", mailbox, fpath, err)
 		}
-		runtime.GC()
 	}()
-	fstat, err := os.Stat(fpath)
-	if err != nil {
-		ch <- 3
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-		return
+
+	for i := 0; i < len(fpath); i++ {
+		_, err := os.Stat(filepath.Join(configs.FileCacheDir, fpath[i]))
+		if err != nil {
+			ch <- 3
+			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+			return
+		}
 	}
 
-	var authreq rpc.AuthReq
-	authreq.FileId = fid
-	authreq.FileName = fname
-	authreq.FileSize = uint64(fstat.Size())
-	value := authreq.FileSize / 1024 / 1024
-	authreq.BlockTotal = uint32(fstat.Size() / configs.RpcBuffer)
-	if fstat.Size()%configs.RpcBuffer != 0 {
-		authreq.BlockTotal += 1
-	}
-	authreq.PublicKey = configs.PublicKey
+	msg := tools.GetRandomcode(16)
 
-	authreq.Msg = []byte(tools.GetRandomcode(16))
 	kr, _ := cesskeyring.FromURI(configs.C.AccountSeed, cesskeyring.NetSubstrate{})
 	// sign message
-	sign, err := kr.Sign(kr.SigningContext(authreq.Msg))
+	sign, err := kr.Sign(kr.SigningContext([]byte(msg)))
 	if err != nil {
 		ch <- 1
 		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
-	authreq.Sign = sign[:]
 
-	// get all scheduler
+	// Get all scheduler
 	schds, err := chain.GetSchedulerInfo()
 	if err != nil {
 		ch <- 1
 		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
 		return
 	}
-	var client *rpc.Client
-	for i, schd := range schds {
-		wsURL := "ws://" + string(base58.Decode(string(schd.Ip)))
-		if connctl.Is(wsURL) {
+
+	tools.RandSlice(schds)
+
+	for i := 0; i < len(schds); i++ {
+		wsURL := string(base58.Decode(string(schds[i].Ip)))
+		tcpAddr, err := net.ResolveTCPAddr("tcp", wsURL)
+		if err != nil {
+			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
 			continue
 		}
-		ctx, _ := context.WithTimeout(context.Background(), 5*time.Second)
-		client, err = rpc.DialWebsocket(ctx, wsURL, "")
+
+		conTcp, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
-			Uld.Sugar().Infof("[%v] [%v] [%v] %v", mailbox, fpath, wsURL, err)
-			if (i + 1) == len(schds) {
-				ch <- 1
-				Uld.Sugar().Infof("[%v] [%v] All scheduler not working", mailbox, fpath)
-				return
-			}
-		} else {
-			if value >= 10 {
-				connctl.Add(wsURL, time.Now().Add(time.Second*time.Duration(2*value)).Unix())
-			}
-			break
+			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+			continue
 		}
-	}
 
-	bob, err := proto.Marshal(&authreq)
-	if err != nil {
-		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-		return
-	}
-
-	data, code, err := WriteData2(client, configs.RpcService_Scheduler, configs.RpcMethod_auth, bob)
-	if err != nil {
-		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-		return
-	}
-
-	if code == 201 {
+		tcpCon := tcp.NewTcp(conTcp)
+		srv := tcp.NewClient(tcpCon, configs.FileCacheDir, fpath)
+		err = srv.SendFile(fid, configs.PublicKey, []byte(msg), sign[:])
+		if err != nil {
+			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+			continue
+		}
 		ch <- 2
+		Uld.Sugar().Infof("[Success] Storage file:%s", fpath)
 		return
 	}
-
-	if code != 200 {
-		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, code)
-		return
-	}
-
-	var n int
-	var filereq rpc.FileUploadReq
-	var buf = make([]byte, configs.RpcBuffer)
-	f, err := os.OpenFile(fpath, os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, code)
-		return
-	}
-	filereq.Auth = data
-	for i := 0; i < int(authreq.BlockTotal); i++ {
-		filereq.BlockIndex = uint32(i + 1)
-		f.Seek(int64(i*configs.RpcBuffer), 0)
-		n, _ = f.Read(buf)
-		filereq.FileData = buf[:n]
-
-		bob, err := proto.Marshal(&filereq)
-		if err != nil {
-			ch <- 1
-			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-			return
-		}
-
-		_, _, err = WriteData2(client, configs.RpcService_Scheduler, configs.RpcMethod_WriteFile, bob)
-		if err != nil {
-			ch <- 1
-			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-			return
-		}
-	}
-	ch <- 2
-	Uld.Sugar().Infof("[Success] Storage file:%s", fpath)
-}
-
-func calcFileHashByChunks(fpath string, chunksize int64) (string, error) {
-	if chunksize <= 0 {
-		return "", errors.New("Invalid chunk size")
-	}
-	fstat, err := os.Stat(fpath)
-	if err != nil {
-		return "", err
-	}
-	chunkNum := fstat.Size() / chunksize
-	if fstat.Size()%chunksize != 0 {
-		chunkNum++
-	}
-	var n int
-	var chunkhash, allhash, filehash string
-	var buf = make([]byte, chunksize)
-	f, err := os.OpenFile(fpath, os.O_RDONLY, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	for i := int64(0); i < chunkNum; i++ {
-		f.Seek(i*chunksize, 0)
-		n, err = f.Read(buf)
-		if err != nil && err != io.EOF {
-			return "", err
-		}
-		chunkhash, err = tools.CalcHash(buf[:n])
-		if err != nil {
-			return "", err
-		}
-		allhash += chunkhash
-	}
-	filehash, err = tools.CalcHash([]byte(allhash))
-	if err != nil {
-		return "", err
-	}
-	return filehash, nil
-}
-
-func WriteData2(cli *rpc.Client, service, method string, body []byte) ([]byte, int32, error) {
-	req := &rpc.ReqMsg{
-		Service: service,
-		Method:  method,
-		Body:    body,
-	}
-	ctx, _ := context.WithTimeout(context.Background(), 90*time.Second)
-	resp, err := cli.Call(ctx, req)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "Call err:")
-	}
-
-	var b rpc.RespBody
-	err = proto.Unmarshal(resp.Body, &b)
-	if err != nil {
-		return nil, 0, errors.Wrap(err, "Unmarshal:")
-	}
-	return b.Data, b.Code, err
+	ch <- 1
 }

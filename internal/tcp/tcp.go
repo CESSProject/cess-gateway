@@ -111,10 +111,9 @@ func (t *TcpCon) readMsg() {
 			return
 		}
 
-		// 数据大小
+		// data size
 		msgSize := binary.BigEndian.Uint32(header)
 
-		// 解析为结构体消息
 		var n int
 		var m *Message
 

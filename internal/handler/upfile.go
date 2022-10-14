@@ -353,13 +353,13 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) 
 		}
 	}()
 
+	var existFile = make([]string, 0)
 	for i := 0; i < len(fpath); i++ {
 		_, err := os.Stat(filepath.Join(configs.FileCacheDir, fpath[i]))
 		if err != nil {
-			ch <- 3
-			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
-			return
+			continue
 		}
+		existFile = append(existFile, fpath[i])
 	}
 
 	msg := tools.GetRandomcode(16)
@@ -369,7 +369,7 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) 
 	sign, err := kr.Sign(kr.SigningContext([]byte(msg)))
 	if err != nil {
 		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+		Uld.Sugar().Infof("[%v] %v", mailbox, err)
 		return
 	}
 
@@ -377,7 +377,7 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) 
 	schds, err := chain.GetSchedulerInfo()
 	if err != nil {
 		ch <- 1
-		Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+		Uld.Sugar().Infof("[%v] %v", mailbox, err)
 		return
 	}
 
@@ -387,25 +387,24 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) 
 		wsURL := string(base58.Decode(string(schds[i].Ip)))
 		tcpAddr, err := net.ResolveTCPAddr("tcp", wsURL)
 		if err != nil {
-			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+			Uld.Sugar().Infof("[%v] %v", mailbox, err)
 			continue
 		}
 
 		conTcp, err := net.DialTCP("tcp", nil, tcpAddr)
 		if err != nil {
-			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+			Uld.Sugar().Infof("[%v] %v", mailbox, err)
 			continue
 		}
 
 		tcpCon := tcp.NewTcp(conTcp)
-		srv := tcp.NewClient(tcpCon, configs.FileCacheDir, fpath)
+		srv := tcp.NewClient(tcpCon, configs.FileCacheDir, existFile)
 		err = srv.SendFile(fid, configs.PublicKey, []byte(msg), sign[:])
 		if err != nil {
-			Uld.Sugar().Infof("[%v] [%v] %v", mailbox, fpath, err)
+			Uld.Sugar().Infof("[%v] %v", mailbox, err)
 			continue
 		}
 		ch <- 2
-		Uld.Sugar().Infof("[Success] Storage file:%s", fpath)
 		return
 	}
 	ch <- 1

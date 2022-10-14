@@ -3,8 +3,10 @@ package tcp
 import (
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,10 +25,8 @@ type ConMgr struct {
 	dir      string
 	fileName string
 
-	// 发送的文件列表
 	sendFiles []string
 
-	// 在发送重要消息的时候，需要同步等待消息的状态，返回是否正确
 	waitNotify chan bool
 	stop       chan struct{}
 }
@@ -41,7 +41,6 @@ func NewServer(conn NetConn, dir string) Server {
 
 func (c *ConMgr) Start() error {
 	c.conn.HandlerLoop()
-	// 处理接收的消息
 	return c.handler()
 }
 
@@ -66,7 +65,6 @@ func (c *ConMgr) handler() error {
 
 		switch m.MsgType {
 		case MsgHead:
-			// 创建文件
 			if m.FileName != "" {
 				c.fileName = m.FileName
 			} else {
@@ -89,7 +87,6 @@ func (c *ConMgr) handler() error {
 				c.conn.SendMsg(NewCloseMsg(c.fileName, Status_Err))
 				return nil
 			}
-			// 写入文件
 			_, err = fs.Write(m.Bytes)
 			if err != nil {
 				fmt.Println("file.Write err =", err)
@@ -97,7 +94,6 @@ func (c *ConMgr) handler() error {
 				return err
 			}
 		case MsgEnd:
-			// 操作完成
 			info, _ := fs.Stat()
 			if info.Size() != int64(m.FileSize) {
 				err = fmt.Errorf("file.size %v rece size %v \n", info.Size(), m.FileSize)
@@ -138,7 +134,6 @@ func NewClient(conn NetConn, dir string, files []string) Client {
 func (c *ConMgr) SendFile(fid string, pkey, signmsg, sign []byte) error {
 	var err error
 	c.conn.HandlerLoop()
-	// 处理接收的消息
 	go func() {
 		_ = c.handler()
 	}()
@@ -156,6 +151,9 @@ func (c *ConMgr) sendFile(fid string, pkey, signmsg, sign []byte) error {
 		err = c.sendSingleFile(filepath.Join(c.dir, file), fid, pkey, signmsg, sign)
 		if err != nil {
 			return err
+		}
+		if strings.Contains(file, ".") {
+			os.Remove(filepath.Join(c.dir, file))
 		}
 	}
 
@@ -177,14 +175,11 @@ func (c *ConMgr) sendSingleFile(filePath string, fid string, pkey, signmsg, sign
 	}()
 	fileInfo, _ := file.Stat()
 
-	fmt.Println("client ready to write ", filePath)
-	fmt.Println("    file id: ", fid)
+	log.Println("Ready to write file: ", filePath)
 	m := NewHeadMsg(fileInfo.Name(), fid, pkey, signmsg, sign)
-	// 发送文件信息
 	c.conn.SendMsg(m)
 
-	// 等待服务器返回通知消息
-	timer := time.NewTimer(10 * time.Second)
+	timer := time.NewTimer(5 * time.Second)
 	select {
 	case ok := <-c.waitNotify:
 		if !ok {
@@ -195,7 +190,6 @@ func (c *ConMgr) sendSingleFile(filePath string, fid string, pkey, signmsg, sign
 	}
 
 	for !c.conn.IsClose() {
-		// 发送文件数据
 		readBuf := BytesPool.Get().([]byte)
 
 		n, err := file.Read(readBuf)
@@ -215,7 +209,7 @@ func (c *ConMgr) sendSingleFile(filePath string, fid string, pkey, signmsg, sign
 	if waitTime < 5 {
 		waitTime = 5
 	}
-	// 等待服务器返回通知消息
+
 	timer = time.NewTimer(time.Second * time.Duration(waitTime))
 	select {
 	case ok := <-c.waitNotify:
@@ -226,11 +220,10 @@ func (c *ConMgr) sendSingleFile(filePath string, fid string, pkey, signmsg, sign
 		return fmt.Errorf("wait server msg timeout")
 	}
 
-	fmt.Println("client send " + filePath + " file success...")
+	log.Println("Send " + filePath + " file success...")
 	return nil
 }
 
-// PathExists 判断文件夹是否存在
 func PathExists(path string) bool {
 	_, err := os.Stat(path)
 	if err != nil && os.IsNotExist(err) {

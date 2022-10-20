@@ -24,7 +24,6 @@ import (
 
 	cesskeyring "github.com/CESSProject/go-keyring"
 	"github.com/gin-gonic/gin"
-	"storj.io/common/base58"
 )
 
 type ConnectedCtl struct {
@@ -308,7 +307,7 @@ func UpfileHandler(c *gin.Context) {
 		return
 	}
 
-	go task_StoreFile(newChunksPath, usertoken.Mailbox, fileid, filename)
+	go task_StoreFile(newChunksPath, usertoken.Mailbox, fileid, filename, fstat.Size())
 	resp.Code = http.StatusOK
 	resp.Msg = Status_200_default
 	resp.Data = fmt.Sprintf("%v", fileid)
@@ -316,7 +315,7 @@ func UpfileHandler(c *gin.Context) {
 	return
 }
 
-func task_StoreFile(fpath []string, mailbox, fid, fname string) {
+func task_StoreFile(fpath []string, mailbox, fid, fname string, fsize int64) {
 	defer func() {
 		if err := recover(); err != nil {
 			Err.Sugar().Errorf("%v", err)
@@ -324,12 +323,12 @@ func task_StoreFile(fpath []string, mailbox, fid, fname string) {
 	}()
 	var channel_1 = make(chan uint8, 1)
 	Uld.Sugar().Infof("[%v] Start the file backup management process", fid)
-	go uploadToStorage(channel_1, fpath, mailbox, fid, fname)
+	go uploadToStorage(channel_1, fpath, mailbox, fid, fname, fsize)
 	for {
 		select {
 		case result := <-channel_1:
 			if result == 1 {
-				go uploadToStorage(channel_1, fpath, mailbox, fid, fname)
+				go uploadToStorage(channel_1, fpath, mailbox, fid, fname, fsize)
 			}
 			if result == 2 {
 				Uld.Sugar().Infof("[%v] File save successfully", fid)
@@ -344,7 +343,7 @@ func task_StoreFile(fpath []string, mailbox, fid, fname string) {
 }
 
 // Upload files to cess storage system
-func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) {
+func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string, fsize int64) {
 	defer func() {
 		err := recover()
 		if err != nil {
@@ -384,7 +383,8 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) 
 	tools.RandSlice(schds)
 
 	for i := 0; i < len(schds); i++ {
-		wsURL := string(base58.Decode(string(schds[i].Ip)))
+		//wsURL := string(base58.Decode(string(schds[i].Ip)))
+		wsURL := "47.242.144.118:8081"
 		tcpAddr, err := net.ResolveTCPAddr("tcp", wsURL)
 		if err != nil {
 			Uld.Sugar().Infof("[%v] %v", mailbox, err)
@@ -399,7 +399,7 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string) 
 
 		tcpCon := tcp.NewTcp(conTcp)
 		srv := tcp.NewClient(tcpCon, configs.FileCacheDir, existFile)
-		err = srv.SendFile(fid, configs.PublicKey, []byte(msg), sign[:])
+		err = srv.SendFile(fid, fsize, configs.PublicKey, []byte(msg), sign[:])
 		if err != nil {
 			Uld.Sugar().Infof("[%v] %v", mailbox, err)
 			continue

@@ -5,18 +5,17 @@ import (
 	"cess-gateway/internal/chain"
 	"cess-gateway/internal/erasure"
 	. "cess-gateway/internal/logger"
-	"cess-gateway/internal/rpc"
-	"context"
+	"cess-gateway/internal/tcp"
+	"cess-gateway/tools"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
+	cesskeyring "github.com/CESSProject/go-keyring"
 	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
-	"storj.io/common/base58"
 )
 
 func DownfileHandler(c *gin.Context) {
@@ -61,13 +60,13 @@ func DownfileHandler(c *gin.Context) {
 		return
 	}
 
-	if string(fmeta.FileState) != "active" {
-		Err.Sugar().Errorf("[%v] file state is not active", c.ClientIP())
-		resp.Code = http.StatusForbidden
-		resp.Msg = Status_403_hotbackup
-		c.JSON(http.StatusForbidden, resp)
-		return
-	}
+	// if string(fmeta.FileState) != "active" {
+	// 	Err.Sugar().Errorf("[%v] file state is not active", c.ClientIP())
+	// 	resp.Code = http.StatusForbidden
+	// 	resp.Msg = Status_403_hotbackup
+	// 	c.JSON(http.StatusForbidden, resp)
+	// 	return
+	// }
 
 	r := len(fmeta.ChunkInfo) / 3
 	d := len(fmeta.ChunkInfo) - r
@@ -86,7 +85,7 @@ func DownfileHandler(c *gin.Context) {
 		}
 	}
 
-	err = erasure.ReedSolomon_Restore(configs.FileCacheDir, fid, d, r)
+	err = erasure.ReedSolomon_Restore(configs.FileCacheDir, fid, d, r, uint64(fmeta.FileSize))
 	if err != nil {
 		Err.Sugar().Errorf("[%v] ReedSolomon_Restore: %v", c.ClientIP(), err)
 		resp.Code = http.StatusInternalServerError
@@ -94,6 +93,24 @@ func DownfileHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, resp)
 		return
 	}
+
+	if r > 0 {
+		fstat, err := os.Stat(fpath)
+		if err != nil {
+			Err.Sugar().Errorf("[%v] %v", c.ClientIP(), err)
+			resp.Code = http.StatusInternalServerError
+			resp.Msg = Status_500_unexpected
+			c.JSON(http.StatusInternalServerError, resp)
+			return
+		}
+		if uint64(fstat.Size()) > uint64(fmeta.FileSize) {
+			tempfile := fpath + ".temp"
+			copyFile(fpath, tempfile, int64(fmeta.FileSize))
+			os.Remove(fpath)
+			os.Rename(tempfile, fpath)
+		}
+	}
+
 	//c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%s", filehash))
 	c.Writer.Header().Add("Content-Disposition", fmt.Sprintf("attachment; filename=%v", fid))
 	c.Writer.Header().Add("Content-Type", "application/octet-stream")
@@ -112,64 +129,62 @@ func downloadFromStorage(fpath string, fsize int64, mip string) error {
 		}
 	}
 
-	var client *rpc.Client
+	msg := tools.GetRandomcode(16)
 
-	wsURL := "ws://" + string(base58.Decode(mip))
-
-	ctx, _ := context.WithTimeout(context.Background(), 6*time.Second)
-	client, err = rpc.DialWebsocket(ctx, wsURL, "")
-	if err != nil {
-		return errors.Wrapf(err, "[Dial %v]", wsURL)
-	}
-
-	var wantfile rpc.FileDownloadReq
-	fname := filepath.Base(fpath)
-
-	wantfile.FileId = fmt.Sprintf("%v", fname)
-	wantfile.BlockIndex = 1
-
-	reqmsg := rpc.ReqMsg{}
-	reqmsg.Method = configs.RpcMethod_ReadFile
-	reqmsg.Service = configs.RpcService_Miner
-
-	file, err := os.OpenFile(fpath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC|os.O_APPEND, 0666)
+	kr, _ := cesskeyring.FromURI(configs.C.AccountSeed, cesskeyring.NetSubstrate{})
+	// sign message
+	sign, err := kr.Sign(kr.SigningContext([]byte(msg)))
 	if err != nil {
 		return err
 	}
-	defer file.Close()
 
+	//wsURL := string(base58.Decode(mip))
+	wsURL := "43.128.134.24:15001"
+	tcpAddr, err := net.ResolveTCPAddr("tcp", wsURL)
+	if err != nil {
+		return err
+	}
+
+	conTcp, err := net.DialTCP("tcp", nil, tcpAddr)
+	if err != nil {
+		return err
+	}
+	srv := tcp.NewClient(tcp.NewTcp(conTcp), configs.FileCacheDir, nil)
+	return srv.RecvFile(filepath.Base(fpath), fsize, configs.PublicKey, []byte(msg), sign[:])
+}
+
+func copyFile(src, dst string, length int64) error {
+	srcfile, err := os.OpenFile(src, os.O_RDONLY, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer srcfile.Close()
+	dstfile, err := os.OpenFile(src, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	defer dstfile.Close()
+
+	var buf = make([]byte, 64*1024)
+	var count int64
 	for {
-		data, err := proto.Marshal(&wantfile)
-		if err != nil {
+		n, err := srcfile.Read(buf)
+		if err != nil && err != io.EOF {
 			return err
 		}
-		reqmsg.Body = data
-		ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
-		resp, err := client.Call(ctx, &reqmsg)
-		if err != nil {
-			return err
-		}
-
-		var respbody rpc.RespBody
-		err = proto.Unmarshal(resp.Body, &respbody)
-		if err != nil || respbody.Code != 200 {
-			return errors.Wrap(err, "[Error]Download file from CESS reply message"+respbody.Msg+",error")
-		}
-		var blockData rpc.FileDownloadInfo
-		err = proto.Unmarshal(respbody.Data, &blockData)
-		if err != nil {
-			return errors.Wrap(err, "[Error]Download file from CESS error")
-		}
-
-		_, err = file.Write(blockData.Data)
-		if err != nil {
-			return err
-		}
-
-		if blockData.BlockIndex == blockData.BlockTotal {
+		if n == 0 {
 			break
 		}
-		wantfile.BlockIndex++
+		count += int64(n)
+		if count < length {
+			dstfile.Write(buf[:n])
+		} else {
+			tail := count - length
+			if n >= int(tail) {
+				dstfile.Write(buf[:(n - int(tail))])
+			}
+		}
 	}
+
 	return nil
 }

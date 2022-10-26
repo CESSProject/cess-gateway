@@ -126,22 +126,6 @@ func Command_Space() *cobra.Command {
 // Print version number and exit
 func Command_Version_Runfunc(cmd *cobra.Command, args []string) {
 	fmt.Println(configs.VERSION)
-	//txhash, err := chain.TestUpload(
-	//data, err := chain.TestQuery(
-	//txhash, err := chain.TestUpload2(
-	//data, err := chain.TestQuery2(
-	//txhash, err := chain.TestUpload3(
-	//txhash, err := chain.TestRegisterScheduler(
-	data, err := chain.TestQueryFile(
-		//"ws://106.15.44.155:9948/",
-		"wss://testnet-rpc0.cess.cloud/ws/",
-		"head achieve piano online exhaust bulk trust vote inflict room keen maximum",
-		"5c1cfc237833fe178f89cdd43aeb2cdc1cd9d2fe00f83eea866153ab93ef486e",
-	)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(data)
 	os.Exit(0)
 }
 
@@ -199,7 +183,7 @@ func Command_BuySpace_Runfunc(cmd *cobra.Command, args []string) {
 	}
 	refreshProfile(cmd)
 	logger.Log_Init()
-	txhash, err := chain.BuySpacePackage(types.U8(p_type), count)
+	txhash, err := chain.BuySpacePackage(types.U8(p_type-1), count)
 	if err != nil {
 		if err.Error() == chain.ERR_Empty {
 			log.Println("[err] Please check your wallet balance.")

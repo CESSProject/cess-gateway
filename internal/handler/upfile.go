@@ -259,7 +259,7 @@ func UpfileHandler(c *gin.Context) {
 		resp.Msg = Status_500_unexpected
 		c.JSON(http.StatusInternalServerError, resp)
 	}
-
+	fmt.Println("--1: ", chunkPath, datachunkLen, rduchunkLen)
 	// Calc merkle hash tree
 	hTree, err := hashtree.NewHashTree(chunkPath)
 	if err != nil {
@@ -270,18 +270,22 @@ func UpfileHandler(c *gin.Context) {
 
 	// Merkel root hash
 	fileid := hex.EncodeToString(hTree.MerkleRoot())
-
+	fmt.Println("--2: ", fileid)
 	// Rename the file and chunks with root hash
 	var newChunksPath = make([]string, 0)
 	newpath := filepath.Join(configs.FileCacheDir, fileid)
 	os.Rename(fpath, newpath)
-	for i := 0; i < len(chunkPath); i++ {
-		var ext = filepath.Ext(chunkPath[i])
-		var newchunkpath = filepath.Join(configs.FileCacheDir, fileid+ext)
-		os.Rename(chunkPath[i], newchunkpath)
-		newChunksPath = append(newChunksPath, fileid+ext)
+	if rduchunkLen == 0 {
+		newChunksPath = append(newChunksPath, fileid)
+	} else {
+		for i := 0; i < len(chunkPath); i++ {
+			var ext = filepath.Ext(chunkPath[i])
+			var newchunkpath = filepath.Join(configs.FileCacheDir, fileid+ext)
+			os.Rename(chunkPath[i], newchunkpath)
+			newChunksPath = append(newChunksPath, fileid+ext)
+		}
 	}
-
+	fmt.Println("--3: ", newChunksPath)
 	// Declaration file
 	txhash, err := chain.UploadDeclaration(configs.C.AccountSeed, fileid, filename)
 	if txhash == "" {
@@ -329,6 +333,7 @@ func task_StoreFile(fpath []string, mailbox, fid, fname string, fsize int64) {
 		case result := <-channel_1:
 			if result == 1 {
 				go uploadToStorage(channel_1, fpath, mailbox, fid, fname, fsize)
+				time.Sleep(time.Second * 6)
 			}
 			if result == 2 {
 				Uld.Sugar().Infof("[%v] File save successfully", fid)
@@ -360,7 +365,7 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string, 
 		}
 		existFile = append(existFile, fpath[i])
 	}
-
+	fmt.Println("--4: ", existFile)
 	msg := tools.GetRandomcode(16)
 
 	kr, _ := cesskeyring.FromURI(configs.C.AccountSeed, cesskeyring.NetSubstrate{})
@@ -383,22 +388,36 @@ func uploadToStorage(ch chan uint8, fpath []string, mailbox, fid, fname string, 
 	tools.RandSlice(schds)
 
 	for i := 0; i < len(schds); i++ {
-		//wsURL := string(base58.Decode(string(schds[i].Ip)))
-		wsURL := "47.242.144.118:8081"
+		wsURL := fmt.Sprintf("%d.%d.%d.%d:%d",
+			schds[i].Ip.Value[0],
+			schds[i].Ip.Value[1],
+			schds[i].Ip.Value[2],
+			schds[i].Ip.Value[3],
+			schds[i].Ip.Port,
+		)
+		fmt.Println("Will send to ", wsURL)
 		tcpAddr, err := net.ResolveTCPAddr("tcp", wsURL)
 		if err != nil {
 			Uld.Sugar().Infof("[%v] %v", mailbox, err)
 			continue
 		}
-
-		conTcp, err := net.DialTCP("tcp", nil, tcpAddr)
+		dialer := net.Dialer{Timeout: time.Duration(time.Second * 5)}
+		netConn, err := dialer.Dial("tcp", tcpAddr.String())
 		if err != nil {
 			Uld.Sugar().Infof("[%v] %v", mailbox, err)
 			continue
 		}
 
+		conTcp, ok := netConn.(*net.TCPConn)
+		if !ok {
+			Uld.Sugar().Infof("[%v] ", err)
+			continue
+		}
+
 		tcpCon := tcp.NewTcp(conTcp)
 		srv := tcp.NewClient(tcpCon, configs.FileCacheDir, existFile)
+		fmt.Println(configs.FileCacheDir)
+		fmt.Println(existFile)
 		err = srv.SendFile(fid, fsize, configs.PublicKey, []byte(msg), sign[:])
 		if err != nil {
 			Uld.Sugar().Infof("[%v] %v", mailbox, err)

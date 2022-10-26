@@ -17,10 +17,6 @@ const (
 	MsgClose
 	MsgRecvHead
 	MsgRecvFile
-	// MsgFillerHead
-	// MsgFillerHeadNotify
-	// MsgFiller
-	// MsgFillerNotify
 )
 
 type Status byte

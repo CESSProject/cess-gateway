@@ -36,21 +36,46 @@ const (
 	ERR_Empty   = "Empty"
 )
 
-//---RegisterMsg
+type FileHash [64]types.U8
+type FileBlockId [68]types.U8
+
+// ---RegisterMsg
 type RegisterMsg struct {
 	Acc      types.Bytes `json:"acc"`
 	Collrate types.U128  `json:"collrate"`
 	Random   types.U32   `json:"random"`
 }
 
-//---SchedulerInfo
+// ---SchedulerInfo
 type SchedulerInfo struct {
-	Ip              types.Bytes
+	Ip              Ipv4Type
 	Stash_user      types.AccountID
 	Controller_user types.AccountID
 }
 
-//---FileMetaInfo
+type Ipv4Type_Query struct {
+	Placeholder types.U8 //
+	Index       types.U8
+	Value       [4]types.U8
+	Port        types.U16
+}
+
+type IpAddress struct {
+	IPv4 Ipv4Type
+	IPv6 Ipv6Type
+}
+type Ipv4Type struct {
+	Index types.U8
+	Value [4]types.U8
+	Port  types.U16
+}
+type Ipv6Type struct {
+	Index types.U8
+	Value [8]types.U16
+	Port  types.U16
+}
+
+// ---FileMetaInfo
 type FileMetaInfo struct {
 	FileSize  types.U64
 	Index     types.U32
@@ -69,7 +94,7 @@ type ChunkInfo struct {
 	MinerAcc  types.AccountID
 }
 
-//---UserInfo
+// ---UserInfo
 type UserSpaceListInfo struct {
 	Size     types.U128 `json:"size"`
 	Deadline types.U32  `json:"deadline"`

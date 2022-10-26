@@ -233,6 +233,7 @@ func GrantTokenHandler(c *gin.Context) {
 	if tn > utoken.ExpirationTime {
 		resp.Code = http.StatusOK
 		resp.Msg = Status_200_TokenExpired
+		db.Delete([]byte(reqmsg.Mailbox))
 		c.JSON(http.StatusOK, resp)
 		return
 	}

@@ -140,11 +140,14 @@ func NewClient(conn NetConn, dir string, files []string) Client {
 }
 
 func (c *ConMgr) SendFile(fid string, fsize int64, pkey, signmsg, sign []byte) error {
+	fmt.Println("--1--")
 	var err error
 	c.conn.HandlerLoop()
 	go func() {
+		fmt.Println("--2--")
 		_ = c.handler()
 	}()
+	fmt.Println("--3--")
 	err = c.sendFile(fid, fsize, pkey, signmsg, sign)
 	return err
 }
@@ -171,6 +174,7 @@ func (c *ConMgr) sendFile(fid string, fsize int64, pkey, signmsg, sign []byte) e
 		if (i + 1) == len(c.sendFiles) {
 			lastmatrk = true
 		}
+		fmt.Println("lastmark: ", lastmatrk)
 		err = c.sendSingleFile(filepath.Join(c.dir, c.sendFiles[i]), fid, fsize, lastmatrk, pkey, signmsg, sign)
 		if err != nil {
 			return err

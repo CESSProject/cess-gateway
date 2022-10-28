@@ -139,7 +139,7 @@ func UploadDeclaration(transactionPrK, filehash, filename string) (string, error
 }
 
 // Delete files in chain
-func DeleteFileOnChain(phrase, fileid string) (string, error) {
+func DeleteFileOnChain(phrase, fid string) (string, error) {
 	defer func() {
 		if err := recover(); err != nil {
 			Err.Sugar().Errorf("%v", tools.RecoverError(err))
@@ -160,7 +160,15 @@ func DeleteFileOnChain(phrase, fileid string) (string, error) {
 		return txhash, errors.Wrap(err, "GetMetadataLatest")
 	}
 
-	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, types.NewBytes([]byte(fileid)))
+	var hash FileHash
+	if len(fid) != len(hash) {
+		return txhash, errors.New("invalid filehash")
+	}
+	for i := 0; i < len(hash); i++ {
+		hash[i] = types.U8(fid[i])
+	}
+
+	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, hash)
 	if err != nil {
 		return txhash, errors.Wrap(err, "NewCall")
 	}

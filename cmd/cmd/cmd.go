@@ -237,7 +237,7 @@ func Command_UpgradePackage_Runfunc(cmd *cobra.Command, args []string) {
 	}
 	refreshProfile(cmd)
 	logger.Log_Init()
-	txhash, err := chain.UpgradeSpacePackage(types.U8(p_type), count)
+	txhash, err := chain.UpgradeSpacePackage(types.U8(p_type-1), count)
 	if err != nil {
 		if err.Error() == chain.ERR_Empty {
 			log.Println("[err] Please check your wallet balance.")
@@ -297,7 +297,7 @@ func Command_Space_Runfunc(cmd *cobra.Command, args []string) {
 
 	//print your own details
 	fmt.Printf("Total Space: %v byte\nUsed Space: %v byte\nRemaining Space: %v byte\nPackage Type: %v\nDeadline: %v\nState: %v\n",
-		sp.Space, sp.Used_space, sp.Remaining_space, sp.Package_type, sp.Deadline, string(sp.State))
+		sp.Space, sp.Used_space, sp.Remaining_space, sp.Package_type+1, sp.Deadline, string(sp.State))
 	os.Exit(0)
 }
 

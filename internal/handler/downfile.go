@@ -73,8 +73,18 @@ func DownfileHandler(c *gin.Context) {
 	down_count := 0
 	for i := 0; i < len(fmeta.ChunkInfo); i++ {
 		// Download the file from the scheduler service
-		fname := filepath.Join(configs.FileCacheDir, string(fmeta.ChunkInfo[i].ChunkId))
-		err = downloadFromStorage(fname, int64(fmeta.ChunkInfo[i].ChunkSize), string(fmeta.ChunkInfo[i].MinerIp))
+		fname := filepath.Join(configs.FileCacheDir, string(fmeta.ChunkInfo[i].ChunkId[:]))
+		if len(fmeta.ChunkInfo) == 1 {
+			fname = fname[:(len(fname) - 4)]
+		}
+		mip := fmt.Sprintf("%d.%d.%d.%d:%d",
+			fmeta.ChunkInfo[i].MinerIp.Value[0],
+			fmeta.ChunkInfo[i].MinerIp.Value[1],
+			fmeta.ChunkInfo[i].MinerIp.Value[2],
+			fmeta.ChunkInfo[i].MinerIp.Value[3],
+			fmeta.ChunkInfo[i].MinerIp.Port,
+		)
+		err = downloadFromStorage(fname, int64(fmeta.ChunkInfo[i].ChunkSize), mip)
 		if err != nil {
 			Err.Sugar().Errorf("[%v] Downloading %drd shard err: %v", c.ClientIP(), i, err)
 		} else {
@@ -138,9 +148,7 @@ func downloadFromStorage(fpath string, fsize int64, mip string) error {
 		return err
 	}
 
-	//wsURL := string(base58.Decode(mip))
-	wsURL := "43.128.134.24:15001"
-	tcpAddr, err := net.ResolveTCPAddr("tcp", wsURL)
+	tcpAddr, err := net.ResolveTCPAddr("tcp", mip)
 	if err != nil {
 		return err
 	}

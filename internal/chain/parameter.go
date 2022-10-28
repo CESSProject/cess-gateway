@@ -89,8 +89,8 @@ type ChunkInfo struct {
 	MinerId   types.U64
 	ChunkSize types.U64
 	BlockNum  types.U32
-	ChunkId   types.Bytes
-	MinerIp   types.Bytes
+	ChunkId   FileBlockId
+	MinerIp   Ipv4Type
 	MinerAcc  types.AccountID
 }
 

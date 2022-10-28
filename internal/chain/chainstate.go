@@ -232,7 +232,15 @@ func GetFileMetaInfoOnChain(fid string) (FileMetaInfo, error) {
 		return data, errors.Wrap(err, "[GetMetadataLatest]")
 	}
 
-	b, err := types.Encode(fid)
+	var hash FileHash
+	if len(hash) != len(fid) {
+		return data, errors.New("invalid filehash")
+	}
+	for i := 0; i < len(hash); i++ {
+		hash[i] = types.U8(fid[i])
+	}
+
+	b, err := types.Encode(hash)
 	if err != nil {
 		return data, errors.Wrap(err, "[EncodeToBytes]")
 	}

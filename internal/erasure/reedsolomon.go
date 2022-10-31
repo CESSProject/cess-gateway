@@ -1,62 +1,73 @@
-package fileHandling
+package erasure
 
 import (
 	"cess-gateway/configs"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 	"os"
 	"path/filepath"
 
 	"github.com/klauspost/reedsolomon"
 )
 
-func reedSolomonRule(fsize int64) (int, int, error) {
-	var count int64
-	datachunk := int64(1)
+const (
+	Redundancy = 1 * 10 / 15
+)
 
-	if fsize <= configs.SIZE_1KB {
-		if fsize <= 1 {
-			return 1, 0, nil
+func reedSolomonRule(fsize int64) (int, int) {
+	if fsize <= configs.SIZE_1MB*2560 {
+		if fsize <= configs.SIZE_1KB {
+			return 1, 0
 		}
-		datachunk = 2
-		goto result
-	}
 
-	count = fsize / configs.SIZE_1GB
-	if count <= 1 {
-		datachunk = 4
-	} else {
-		if count%2 == 0 {
-			datachunk = count + 4
-		} else {
-			datachunk = count + 3
+		if fsize <= configs.SIZE_1MB*8 {
+			return 2, 1
 		}
+
+		if fsize <= configs.SIZE_1MB*64 {
+			return 4, 2
+		}
+
+		if fsize <= configs.SIZE_1MB*384 {
+			return 6, 3
+		}
+
+		if fsize <= configs.SIZE_1MB*1024 {
+			return 8, 4
+		}
+
+		return 10, 5
 	}
 
-result:
-
-	if datachunk > 20 {
-		datachunk = 20
+	if fsize <= configs.SIZE_1MB*6144 {
+		return 12, 6
 	}
 
-	rdchunks := datachunk / 2
-
-	if math.Ceil(float64(fsize)/float64(datachunk)*float64(datachunk+rdchunks)) > float64(fsize)*float64(1.5) {
-		datachunk -= 1
+	if fsize <= configs.SIZE_1MB*7168 {
+		return 14, 7
 	}
-	return int(datachunk), int(datachunk / 2), nil
+
+	if fsize <= configs.SIZE_1MB*8192 {
+		return 16, 8
+	}
+
+	if fsize <= configs.SIZE_1MB*9216 {
+		return 18, 9
+	}
+
+	return 20, 10
 }
 
 func ReedSolomon(fpath string, size int64) ([]string, int, int, error) {
 	var shardspath = make([]string, 0)
-	datashards, rdunshards, err := reedSolomonRule(size)
-	if err != nil {
-		return shardspath, datashards, rdunshards, err
+	datashards, rdunshards := reedSolomonRule(size)
+	if rdunshards == 0 {
+		shardspath = append(shardspath, fpath)
+		return shardspath, datashards, rdunshards, nil
 	}
 
-	if datashards+rdunshards <= 3 {
+	if datashards+rdunshards <= 6 {
 		enc, err := reedsolomon.New(datashards, rdunshards)
 		if err != nil {
 			return shardspath, datashards, rdunshards, err
@@ -165,11 +176,14 @@ func ReedSolomon(fpath string, size int64) ([]string, int, int, error) {
 	return shardspath, datashards, rdunshards, nil
 }
 
-func ReedSolomon_Restore(dir, fid string, datashards, rdushards int) error {
+func ReedSolomon_Restore(dir, fid string, datashards, rdushards int, fsize uint64) error {
 	outfn := filepath.Join(dir, fid)
-	if rdushards == 0 {
-		return os.Rename(outfn+".000", outfn)
+
+	_, err := os.Stat(outfn)
+	if err == nil {
+		return nil
 	}
+
 	if datashards+rdushards <= 6 {
 		enc, err := reedsolomon.New(datashards, rdushards)
 		if err != nil {
@@ -200,7 +214,7 @@ func ReedSolomon_Restore(dir, fid string, datashards, rdushards int) error {
 		if err != nil {
 			return err
 		}
-
+		defer f.Close()
 		err = enc.Join(f, shards, len(shards[0])*datashards)
 		return err
 	}
@@ -266,7 +280,7 @@ func ReedSolomon_Restore(dir, fid string, datashards, rdushards int) error {
 	if err != nil {
 		return err
 	}
-
+	defer f.Close()
 	shards, size, err = openInput(datashards, rdushards, outfn)
 	if err != nil {
 		return err

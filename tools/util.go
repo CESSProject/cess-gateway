@@ -13,6 +13,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"reflect"
 	"regexp"
 	"runtime/debug"
 	"strings"
@@ -27,7 +28,7 @@ func RandomInRange(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-//Get unique identifier
+// Get unique identifier
 func GetGuid(num int64) (int64, error) {
 	node, err := snowflake.NewNode(num)
 	if err != nil {
@@ -38,7 +39,7 @@ func GetGuid(num int64) (int64, error) {
 	return id.Int64(), nil
 }
 
-//  ----------------------- Random key -----------------------
+// ----------------------- Random key -----------------------
 const baseStr = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()[]{}+-*/_=."
 
 // Generate random password
@@ -94,7 +95,6 @@ func BytesToInt64(bys []byte) int64 {
 
 var reg_mail = regexp.MustCompile(`^[0-9a-z][_,0-9a-z-]{0,31}@([0-9a-z][0-9a-z-]{0,30}[0-9a-z]\.){1,4}[a-z]{2,4}$`)
 
-//
 func VerifyMailboxFormat(mailbox string) bool {
 	return reg_mail.MatchString(mailbox)
 }
@@ -115,7 +115,7 @@ func WalkDir(dir string) ([]string, error) {
 	return files, nil
 }
 
-//Get the number of non-blank lines in a file
+// Get the number of non-blank lines in a file
 func GetFileNonblankLine(path string) (int, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -177,4 +177,24 @@ func RecoverError(err interface{}) string {
 	fmt.Fprintf(buf, "%v\n", err)
 	fmt.Fprintf(buf, "%v\n", string(debug.Stack()))
 	return buf.String()
+}
+
+func RandSlice(slice interface{}) {
+	rv := reflect.ValueOf(slice)
+	if rv.Type().Kind() != reflect.Slice {
+		return
+	}
+
+	length := rv.Len()
+	if length < 2 {
+		return
+	}
+
+	swap := reflect.Swapper(slice)
+	rand.Seed(time.Now().Unix())
+	for i := length - 1; i >= 0; i-- {
+		j := rand.Intn(length)
+		swap(i, j)
+	}
+	return
 }

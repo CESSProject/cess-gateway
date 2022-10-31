@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-//
 func UploadDeclaration(transactionPrK, filehash, filename string) (string, error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -33,7 +32,15 @@ func UploadDeclaration(transactionPrK, filehash, filename string) (string, error
 		return txhash, errors.Wrap(err, "[GetMetadataLatest]")
 	}
 
-	c, err := types.NewCall(meta, ChainTx_FileBank_UploadDeclaration, types.NewBytes([]byte(filehash)), types.NewBytes([]byte(filename)))
+	var hash FileHash
+	if len(filehash) != len(hash) {
+		return txhash, errors.New("invalid filehash")
+	}
+	for i := 0; i < len(hash); i++ {
+		hash[i] = types.U8(filehash[i])
+	}
+
+	c, err := types.NewCall(meta, ChainTx_FileBank_UploadDeclaration, hash, types.NewBytes([]byte(filename)))
 	if err != nil {
 		return txhash, errors.Wrap(err, "[NewCall]")
 	}
@@ -99,7 +106,7 @@ func UploadDeclaration(transactionPrK, filehash, filename string) (string, error
 		case status := <-sub.Chan():
 			if status.IsInBlock {
 				events := MyEventRecords{}
-				txhash, _ = types.EncodeToHexString(status.AsInBlock)
+				txhash, _ = types.EncodeToHex(status.AsInBlock)
 				keye, err := GetKeyEvents()
 				if err != nil {
 					return txhash, errors.Wrap(err, "GetKeyEvents")
@@ -132,7 +139,7 @@ func UploadDeclaration(transactionPrK, filehash, filename string) (string, error
 }
 
 // Delete files in chain
-func DeleteFileOnChain(phrase, fileid string) (string, error) {
+func DeleteFileOnChain(phrase, fid string) (string, error) {
 	defer func() {
 		if err := recover(); err != nil {
 			Err.Sugar().Errorf("%v", tools.RecoverError(err))
@@ -153,7 +160,15 @@ func DeleteFileOnChain(phrase, fileid string) (string, error) {
 		return txhash, errors.Wrap(err, "GetMetadataLatest")
 	}
 
-	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, types.NewBytes([]byte(fileid)))
+	var hash FileHash
+	if len(fid) != len(hash) {
+		return txhash, errors.New("invalid filehash")
+	}
+	for i := 0; i < len(hash); i++ {
+		hash[i] = types.U8(fid[i])
+	}
+
+	c, err := types.NewCall(meta, ChainTx_FileBank_DeleteFile, hash)
 	if err != nil {
 		return txhash, errors.Wrap(err, "NewCall")
 	}
@@ -220,7 +235,7 @@ func DeleteFileOnChain(phrase, fileid string) (string, error) {
 		case status := <-sub.Chan():
 			if status.IsInBlock {
 				events := MyEventRecords{}
-				txhash, _ = types.EncodeToHexString(status.AsInBlock)
+				txhash, _ = types.EncodeToHex(status.AsInBlock)
 				keye, err := GetKeyEvents()
 				if err != nil {
 					return txhash, errors.Wrap(err, "GetKeyEvents")
@@ -252,7 +267,6 @@ func DeleteFileOnChain(phrase, fileid string) (string, error) {
 	}
 }
 
-//
 func GetPubkeyFromPrk(prk string) ([]byte, error) {
 	keyring, err := signature.KeyringPairFromSecret(prk, 0)
 	if err != nil {
@@ -349,7 +363,7 @@ func BuySpacePackage(package_type types.U8, count types.U128) (string, error) {
 		case status := <-sub.Chan():
 			if status.IsInBlock {
 				events := MyEventRecords{}
-				txhash, _ = types.EncodeToHexString(status.AsInBlock)
+				txhash, _ = types.EncodeToHex(status.AsInBlock)
 				keye, err := GetKeyEvents()
 				if err != nil {
 					return txhash, errors.Wrap(err, "GetKeyEvents")
@@ -364,11 +378,7 @@ func BuySpacePackage(package_type types.U8, count types.U128) (string, error) {
 				}
 
 				if len(events.FileBank_BuyPackage) > 0 {
-					for i := 0; i < len(events.FileBank_DeleteFile); i++ {
-						if events.FileBank_BuyPackage[i].Acc == types.NewAccountID(configs.PublicKey) {
-							return txhash, nil
-						}
-					}
+					return txhash, nil
 				}
 
 				return txhash, errors.New(ERR_Failed)
@@ -469,7 +479,7 @@ func UpgradeSpacePackage(package_type types.U8, count types.U128) (string, error
 		case status := <-sub.Chan():
 			if status.IsInBlock {
 				events := MyEventRecords{}
-				txhash, _ = types.EncodeToHexString(status.AsInBlock)
+				txhash, _ = types.EncodeToHex(status.AsInBlock)
 				keye, err := GetKeyEvents()
 				if err != nil {
 					return txhash, errors.Wrap(err, "GetKeyEvents")
@@ -589,7 +599,7 @@ func Renewal() (string, error) {
 		case status := <-sub.Chan():
 			if status.IsInBlock {
 				events := MyEventRecords{}
-				txhash, _ = types.EncodeToHexString(status.AsInBlock)
+				txhash, _ = types.EncodeToHex(status.AsInBlock)
 				keye, err := GetKeyEvents()
 				if err != nil {
 					return txhash, errors.Wrap(err, "GetKeyEvents")

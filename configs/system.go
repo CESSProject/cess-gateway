@@ -5,7 +5,7 @@ import (
 )
 
 // type and version
-const VERSION = "CESS-Gateway v0.2.1"
+const VERSION = "CESS-Gateway v0.2.1.221018"
 
 const (
 	// base dir
@@ -40,9 +40,9 @@ const (
 	ValidTimeOfCaptcha = time.Duration(time.Minute * 5)
 
 	//
-	SIZE_1GB = 1024 * 1024 * 1024
-	SIZE_1MB = 1024 * 1024
 	SIZE_1KB = 1024
+	SIZE_1MB = 1024 * SIZE_1KB
+	SIZE_1GB = 1024 * SIZE_1MB
 )
 
 const (

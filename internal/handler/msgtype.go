@@ -6,7 +6,7 @@ const (
 	Status_200_expired      = "captcha has expired and a new captcha has been sent to your mailbox"
 	Status_200_RefreshToken = "A new token has been sent to your mailbox"
 	Status_200_NoFiles      = "No files"
-	Status_200_TokenExpired = "Token expired"
+	Status_200_TokenExpired = "Token expired, please retrieve."
 	Status_200_NoRefresh    = "Please log in to your email to view the token."
 	//400
 	Status_400_default     = "HTTP Error"

@@ -1,10 +1,9 @@
-package communication
+package email
 
 import (
 	"github.com/go-gomail/gomail"
 )
 
-//
 func SendPlainMail(host string, port int, from, passwd string, to []string, subject, body string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("Subject", subject)

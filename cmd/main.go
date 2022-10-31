@@ -12,8 +12,5 @@ func init() {
 
 // Program entry
 func main() {
-	// chain.Init()
-	// //start-up
-	// handler.Main()
 	cmd.Execute()
 }

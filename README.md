@@ -1,4 +1,4 @@
-# <h1 align="center">CESS-GATEWAY &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.16-blue.svg" /></a></h1>
+# <h1 align="center">CESS-GATEWAY &middot; [![GitHub license](https://img.shields.io/badge/license-Apache2-blue)](#LICENSE) <a href=""><img src="https://img.shields.io/badge/golang-%3E%3D1.19-blue.svg"/></a> [![Go Reference](https://pkg.go.dev/badge/github.com/CESSProject/cess-gateway.svg)](https://pkg.go.dev/github.com/CESSProject/cess-gateway)</h1>
 
 CESS-Gateway is a service that using REST API specification for accessing CESS cloud storage.
 
@@ -25,13 +25,13 @@ sudo apt install make gcc git curl wget vim util-linux -y
 
 ### Step 2: Install go locale
 
-CESS-Gateway requires [Go1.16.5](https://golang.org/dl/) or higher.
+CESS-Gateway requires [Go1.19](https://golang.org/dl/) or higher.
 > See the [official Golang installation instructions](https://golang.org/doc/install) If you get stuck in the following process.
 
-- Download go1.16.5 compress the package and extract it to the /use/local directory:
+- Download go1.19 compress the package and extract it to the /use/local directory:
 
 ```shell
-sudo wget -c https://golang.org/dl/go1.16.5.linux-amd64.tar.gz -O - | sudo tar -xz -C /usr/local
+sudo wget -c https://golang.org/dl/go1.19.linux-amd64.tar.gz -O - | sudo tar -xz -C /usr/local
 ```
 
 - You'll need to add `/usr/local/go/bin` to your path. For most Linux distributions you can run something like:
